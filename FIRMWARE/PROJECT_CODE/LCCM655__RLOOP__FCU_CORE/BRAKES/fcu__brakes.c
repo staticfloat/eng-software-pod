@@ -68,6 +68,8 @@ void vFCU_BRAKES__Process(void)
 	//process the stepper driver if its active
 	vSTEPDRIVE__Process();
 
+	sFCU.eBrakeStates = BRAKE_STATE__TEST;
+
 	switch(sFCU.eBrakeStates)
 	{
 

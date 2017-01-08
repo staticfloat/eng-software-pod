@@ -233,6 +233,8 @@ void vFCU__Process(void)
 
 	}//switch(sFCU.eInitStates)
 
+	vFCU_BRAKES__Process();
+
 }
 
 

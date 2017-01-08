@@ -4,7 +4,14 @@ int main()
 {
 
 
-	while(1);
+	//init the flight control unit
+	vFCU__Init();
+
+	while(1)
+	{
+		//process any FCU tasks
+		vFCU__Process();
+	}
 
 }
 
