@@ -396,6 +396,8 @@ void vFCU__Process(void)
 
 }
 
+Luint16 brakeDelay = 0;
+
 /***************************************************************************//**
  * @brief
  * 100ms timer
@@ -430,6 +432,16 @@ void vFCU__RTI_100MS_ISR(void)
 		vFCU_NET_TX__100MS_ISR();
 	#endif
 
+
+	brakeDelay++;
+	if(brakeDelay == 30 && (sFCU.eBrakeStates == BRAKE_STATE__IDLE || sFCU.eBrakeStates == BRAKE_STATE__MOVE_STOPPED)){
+		sFCU.eBrakeStates = BRAKE_STATE__TEST1;
+	}
+
+	if(brakeDelay == 60 && (sFCU.eBrakeStates == BRAKE_STATE__IDLE || sFCU.eBrakeStates == BRAKE_STATE__MOVE_STOPPED)){
+		sFCU.eBrakeStates = BRAKE_STATE__TEST2;
+		brakeDelay = 0;
+	}
 
 }
 

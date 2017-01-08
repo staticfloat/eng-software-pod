@@ -159,13 +159,13 @@ RLOOP - FLIGHT CONTROL UNIT - CORE
 		#define C_LOCALDEF__LCCM655__ENABLE_LASER_DISTANCE					(1U)
 
 		/** Enable accel subsystem */
-		#define C_LOCALDEF__LCCM655__ENABLE_ACCEL							(1U)
+		#define C_LOCALDEF__LCCM655__ENABLE_ACCEL							(0U)
 
 		/** Enable the braking subsystems */
 		#define C_LOCALDEF__LCCM655__ENABLE_BRAKES							(1U)
 
 		/** Enable the throttle control */
-		#define C_LOCALDEF__LCCM655__ENABLE_THROTTLE						(1U)
+		#define C_LOCALDEF__LCCM655__ENABLE_THROTTLE						(0U)
 
 		/** Enable the ASI_RS485 */
 		#define C_LOCALDEF__LCCM655__ENABLE_ASI_RS485						(0U)

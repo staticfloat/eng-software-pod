@@ -219,7 +219,9 @@
 			/** A fault has occurred with the brake system */
 			BRAKE_STATE__FAULT,
 
-			BRAKE_STATE__TEST
+			BRAKE_STATE__TEST1,
+
+			BRAKE_STATE__TEST2
 
 		}E_FCU_BRAKES__STATES_T;
 

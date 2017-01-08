@@ -145,9 +145,14 @@ void vFCU_BRAKES__Process(void)
 			//a fault has occurred
 			break;
 
-		case BRAKE_STATE__TEST:
+		case BRAKE_STATE__TEST1:
 			//just LG test area.
-			vFCU_BRAKES__Move_IBeam_Distance_mm(500);
+			vFCU_BRAKES__Move_IBeam_Distance_mm(200000);
+			break;
+
+		case BRAKE_STATE__TEST2:
+			//just LG test area.
+			vFCU_BRAKES__Move_IBeam_Distance_mm(100000);
 			break;
 
 
@@ -306,7 +311,7 @@ void vFCU_BRAKES__Move_IBeam_Distance_mm(Luint32 u32Distance)
 	//temp
 
 	//Tell the movement planner to go
-	vFCU_BRAKES_STEP__Move(2000, 2000);
+	vFCU_BRAKES_STEP__Move(u32Distance, u32Distance);
 
 	//change state
 	sFCU.eBrakeStates = BRAKE_STATE__BEGIN_MOVE;
