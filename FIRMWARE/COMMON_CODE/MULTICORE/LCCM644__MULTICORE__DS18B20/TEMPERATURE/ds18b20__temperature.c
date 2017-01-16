@@ -86,13 +86,13 @@ Lint16 s16DS18B20_TEMP__All_Request(Luint8 u8DSIndex, Luint8 u8Wait)
 	Lint16 s16Return;
 
 	//generate a reset on the wire
-	s16Return = s16DS18B20_1WIRE__Generate_Reset(sDS18B20.sDevice[u8DSIndex].u8ChannelIndex);
+	s16Return = s16DS18B20_1WIRE__Generate_Reset(u8DSIndex);
 
 	//issue the skip command, no serial number needed.
-	s16Return =  s16DS18B20_1WIRE__Skip(sDS18B20.sDevice[u8DSIndex].u8ChannelIndex);
+	s16Return =  s16DS18B20_1WIRE__Skip(u8DSIndex);
 
 	//start the convert
-	s16Return = s16DS18B20_1WIRE__WriteByte(sDS18B20.sDevice[u8DSIndex].u8ChannelIndex, 0x44U);
+	s16Return = s16DS18B20_1WIRE__WriteByte(u8DSIndex, 0x44U);
 
 	//wait for conversion?
 	if(u8Wait == 1U)

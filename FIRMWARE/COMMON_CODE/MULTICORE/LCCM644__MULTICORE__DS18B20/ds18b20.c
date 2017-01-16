@@ -192,6 +192,7 @@ void vDS18B20__Process(void)
 				s16Return = s16DS18B20_TEMP__All_Request(0U, 1U);
 			#else
 				s16Return = s16DS18B20_TEMP__All_Request(0U, 0U);
+				s16Return = s16DS18B20_TEMP__All_Request(1U, 0U);
 			#endif
 			if(s16Return >= 0)
 			{
