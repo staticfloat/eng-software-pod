@@ -97,12 +97,6 @@
 				/** The current balancing state */
 				E_ATA6870__BALANCE_STATE_T eState;
 
-				/** Total number of cells allowed to be balanced at any one time
-				 * this will reduce thermal load on the BMS boards.
-				 * NOTE: This value is the number of cells per ATA device, not in total.
-				 */
-				Luint8 u8MaxBalanceCells;
-
 				/** The state of the resistors so we don't flood the SPI */
 				Luint8 u8ResistorOn[C_ATA6870__TOTAL_CELLS];
 
@@ -138,10 +132,13 @@
 			Lfloat32 f32AverageCellVoltage;
 
 			/** The average has been updated, cleared in the balancer */
-			Luint8 u8AverageUpdated;
+			Luint8 u8VoltagesUpdated;
 
 			/** The count of 10ms ISR's*/
 			Luint32 u32ISR_Counter;
+			
+			/** The voltage of the lowest cell */
+			Lfloat32 f32CellMin;
 		};
 
 		/*******************************************************************************

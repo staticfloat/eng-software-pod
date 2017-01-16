@@ -46,10 +46,8 @@ void vATA6870_BALANCE__Init(void)
 	//init the variables
 	sATA6870.sBalance.eState = BALANCE_STATE__IDLE;
 
-	//allow a max of 3 cells, but this can be changed later on.
-	sATA6870.sBalance.u8MaxBalanceCells = 3U;
 	//0.025v, can change this later.
-	sATA6870.sBalance.f32BalanceTolerance = 0.025F;
+	sATA6870.sBalance.f32BalanceTolerance = 0.01F;
 
 	//clear the resistor on values
 	for(u8Counter = 0U; u8Counter < C_ATA6870__TOTAL_CELLS; u8Counter++)
@@ -68,7 +66,7 @@ void vATA6870_BALANCE__Init(void)
  */
 void vATA6870_BALANCE__Start(void)
 {
-	sATA6870.u8AverageUpdated = 0U;
+	sATA6870.u8VoltagesUpdated = 0U;
 	sATA6870.sBalance.eState = BALANCE_STATE__WAIT_VOLTAGE_UPDATE;
 }
 
@@ -147,19 +145,10 @@ void vATA6870_BALANCE__Process(void)
 
 		case BALANCE_STATE__WAIT_VOLTAGE_UPDATE:
 
-			//only move on when the pack voltage average is done
-			if(sATA6870.u8AverageUpdated == 1U)
-			{
-				//change state
-				sATA6870.sBalance.eState = BALANCE_STATE__START_BALANCING;
+			//change state
+			sATA6870.sBalance.eState = BALANCE_STATE__START_BALANCING;
 
-				//clear the last flag, it will be upsted in the averager.
-				sATA6870.u8AverageUpdated = 0U;
-			}
-			else
-			{
-				//stay here until the next voltage scan.
-			}
+			sATA6870.u8VoltagesUpdated = 0U;
 			break;
 
 		case BALANCE_STATE__START_BALANCING:
@@ -221,48 +210,36 @@ Luint8 u8ATA6870_BALANCE__Handle(Luint8 u8DeviceIndex, Luint8 u8CellCounter, Lui
 
 	u8Return = 0U;
 
-	//If one cell voltage is above average
-	//Note: this could induce a bias.
-	u8Temp = u8NUMERICAL_TOLERANCE__F32(sATA6870.f32Voltage[u8CellIndex], sATA6870.f32AverageCellVoltage, sATA6870.sBalance.f32BalanceTolerance);
-	if(u8Temp == 0U)
+	//check if we are above threshold
+	if(sATA6870.f32Voltage[u8CellIndex] > sATA6870.f32CellMin + sATA6870.sBalance.f32BalanceTolerance)
 	{
-		//make sure we are actually greater
-		if(sATA6870.f32Voltage[u8CellIndex] > sATA6870.f32AverageCellVoltage)
+		//discharge this cell
+		u8Return = 1U;
+
+		if(sATA6870.sBalance.u8ResistorOn[u8CellIndex] == 0U)
 		{
-			//inc the max cell count for this module
-			u8Return = 1U;
+			//turn on this resistor
+			vATA6870_RES__TurnOn(u8DeviceIndex, u8CellCounter);
 
-			if(sATA6870.sBalance.u8ResistorOn[u8CellIndex] == 0U)
-			{
-				//turn on this resistor
-				vATA6870_RES__TurnOn(u8DeviceIndex, u8CellCounter);
-
-				//update the flag
-				sATA6870.sBalance.u8ResistorOn[u8CellIndex] = 1U;
-			}
-			else
-			{
-				//res was already set on.
-			}
-
+			//update the flag
+			sATA6870.sBalance.u8ResistorOn[u8CellIndex] = 1U;
 		}
 		else
 		{
-			//not within tolerance, but lower, so no need to do anything but check the prev resistor state
-			if(sATA6870.sBalance.u8ResistorOn[u8CellIndex] == 1U)
-			{
-				// cell has reached the setpoint, turn off discharge
-				vATA6870_RES__TurnOff(u8DeviceIndex, u8CellCounter);
-
-				//update the flag
-				sATA6870.sBalance.u8ResistorOn[u8CellIndex] = 0U;
-			}
-
+			//resistor was already set on.
 		}
 	}
 	else
 	{
-		//the cell and average is close, no point in balancing.
+		//cell within tolerance
+		if(sATA6870.sBalance.u8ResistorOn[u8CellIndex] == 1U)
+		{
+			//cell was discharging and has reached the setpoint, turn off discharge
+			vATA6870_RES__TurnOff(u8DeviceIndex, u8CellCounter);
+
+			//update the flag
+			sATA6870.sBalance.u8ResistorOn[u8CellIndex] = 0U;
+		}
 	}
 
 	return u8Return;
@@ -279,94 +256,33 @@ Luint8 u8ATA6870_BALANCE__Handle(Luint8 u8DeviceIndex, Luint8 u8CellCounter, Lui
 void vATA6870_BALANCE__Do(void)
 {
 
-	Luint8 u8MaxCellCount;
 	Luint8 u8DeviceCounter;
 	Luint8 u8CellCounter;
-	Lfloat32 f32Max;
 	Luint8 u8CellIndex;
-	Luint8 u8CellMax;
-	Luint8 u8CellMaxCell;
-
-	//clear the cell index
-	u8CellIndex = 0U;
-
 
 	// for each ATA6870 device
+	sATA6870.f32CellMin = 10.0F;
+	//find the lowest cell
+	for(u8CellIndex = 0U; u8CellIndex < C_LOCALDEF__LCCM650__NUM_DEVICES * C_ATA6870__MAX_CELLS; u8CellIndex++)
+	{
+		if(sATA6870.f32Voltage[u8CellIndex] < sATA6870.f32CellMin) // if new lowest cell
+		{
+			sATA6870.f32CellMin = sATA6870.f32Voltage[u8CellIndex];
+		}
+	}
+
 	for(u8DeviceCounter = 0U; u8DeviceCounter < C_LOCALDEF__LCCM650__NUM_DEVICES; u8DeviceCounter++)
 	{
-		//clear the max count
-		u8MaxCellCount = 0U;
-
-		//find the highest voltage attached to the current device.
-		//we would want to discharge this one first.
-		u8CellMax = 0xFFU;
-		f32Max = 0.0F;
-		for(u8CellCounter = 0U; u8CellCounter < C_ATA6870__MAX_CELLS; u8CellCounter++)
-		{
-			//calc the current index
-			u8CellIndex = (u8DeviceCounter * C_ATA6870__MAX_CELLS) + u8CellCounter;
-
-			//simply choose the highest cell.
-			if(sATA6870.f32Voltage[u8CellIndex] > f32Max)
-			{
-
-				//record it.
-				f32Max = sATA6870.f32Voltage[u8CellIndex];
-				u8CellMax = u8CellIndex;
-				u8CellMaxCell = u8CellCounter;
-			}
-			else
-			{
-				//keep sorting
-			}
-
-		}//for(u8CellCounter = 0U; u8CellCounter < C_ATA6870__MAX_CELLS; u8CellCounter++)
-
-
-		//balance the highest cell first
-		if(u8CellMax != 0xFFU)
-		{
-
-			//we have the max voltage in this cell already, so discharge it
-			//handle the balance decision and if needed update the count;
-			u8MaxCellCount += u8ATA6870_BALANCE__Handle(u8DeviceCounter, u8CellMaxCell, u8CellMax);
-
-		}
-		else
-		{
-			//no max cell found (which is strange)
-		}
-
-
-		//fall on and check for any other cells attached to this device that might need balancing.
-
 		// for each 6P module connected to that device
 		for(u8CellCounter = 0U; u8CellCounter < C_ATA6870__MAX_CELLS; u8CellCounter++)
 		{
 			//calc the current index
 			u8CellIndex = (u8DeviceCounter * C_ATA6870__MAX_CELLS) + u8CellCounter;
 
-			//thermal limiting
-			if(u8MaxCellCount < sATA6870.sBalance.u8MaxBalanceCells)
-			{
+			u8ATA6870_BALANCE__Handle(u8DeviceCounter, u8CellCounter, u8CellIndex);
 
-				//handle the balance decision and if needed update the count;
-				u8MaxCellCount += u8ATA6870_BALANCE__Handle(u8DeviceCounter, u8CellCounter, u8CellIndex);
-
-
-			}//if(u8MaxCellCount < sATA6870.sBalance.u8MaxBalanceCells)
-			else
-			{
-				//not able to do any more on this device
-
-			}//else if(u8MaxCellCount < sATA6870.sBalance.u8MaxBalanceCells)
-
-		}//for(u8CellCounter = 0U; u8CellCounter < C_ATA6870__MAX_CELLS; u8CellCounter++)
-
-
-	}//for(u8DeviceCounter = 0U; u8DeviceCounter < C_LOCALDEF__LCCM650__NUM_DEVICES; u8DeviceCounter++)
-
-
+		}
+	}
 }
 
 

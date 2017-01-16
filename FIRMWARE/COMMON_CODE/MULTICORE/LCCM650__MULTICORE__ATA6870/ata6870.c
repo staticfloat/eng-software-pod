@@ -59,7 +59,7 @@ void vATA6870__Init(void)
 	sATA6870.eState = ATA6870_STATE__INIT_DEVICE;
 	sATA6870.f32AverageCellVoltage = 0.0F;
 	sATA6870.f32PackVoltage = 0.0F;
-	sATA6870.u8AverageUpdated = 0U;
+	sATA6870.u8VoltagesUpdated = 0U;
 
 	//setup the lowlevel
 	vATA6870_LOWLEVEL__Init();
