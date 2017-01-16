@@ -47,6 +47,14 @@ void vFCU_MAINSM_AUTO__Init(void)
 void vFCU_MAINSM_AUTO__Process(void)
 {
 	Luint8 u8Counter;
+	Lfloat32 f32IBeam_Left_mm;
+	Lfloat32 f32IBeam_Right_mm;
+
+
+	E_FCU__SWITCH_STATE_T eSwitchState_Left_Extend;
+	E_FCU__SWITCH_STATE_T eSwitchState_Left_Retract;
+	E_FCU__SWITCH_STATE_T eSwitchState_Right_Extend;
+	E_FCU__SWITCH_STATE_T eSwitchState_Right_Retract;
 
 	//hande the state machine.
 	switch(sFCU.eAutoSeqState)
@@ -62,6 +70,298 @@ void vFCU_MAINSM_AUTO__Process(void)
 		case AUTOSEQ_STATE__IDLE:
 
 			break;
+
+		case AUTOSEQ_STATE__TEST_FUNCTION_BRAKES_INIT_ACTION:
+
+			// Initialize the variables to 0 before test
+			f32IBeam_Left_mm = 0.0;
+			f32IBeam_Right_mm = 0.0;
+
+			// Get the position of the left and right brake
+			f32IBeam_Left_mm = f32FCU_BRAKES__Get_IBeam_mm(FCU_BRAKE__LEFT);
+			f32IBeam_Right_mm = f32FCU_BRAKES__Get_IBeam_mm(FCU_BRAKE__RIGHT);
+
+			// If either brakes are not completely retracted
+			if((f32IBeam_Left_mm > C_FCU__BRAKES__MAX_IBEAM_DIST_UP_BOUND_MM)
+					|| (f32IBeam_Right_mm > C_FCU__BRAKES__MAX_IBEAM_DIST_UP_BOUND_MM))
+			{
+				// Then Retract both the brakes to fully retracted position
+				vFCU_BRAKES__Move_IBeam_Distance_mm(C_FCU__BRAKES__MAX_IBEAM_DIST_MM);
+			}
+
+			// In any case, time to go to next state to see if the sensors give
+			// expected result from the above actuation
+			sFCU.eAutoSeqState = AUTOSEQ_STATE__TEST_FUNCTION_BRAKES_INIT_EXPECTED_RESULT;
+			break;
+
+		case AUTOSEQ_STATE__TEST_FUNCTION_BRAKES_INIT_EXPECTED_RESULT:
+
+			// In AUTOSEQ_STATE__TEST_FUNCTION_BRAKES_INIT_ACTUATION we moved the brakes
+			// to fully retracted if they were not there already.
+
+			// Check the retract limit switches for both left and right eddy brakes.
+			// If the upper state machine is working properly, then by the time we
+			// come here global switch states would have been updated
+			eSwitchState_Left_Retract = sFCU.sBrakes[FCU_BRAKE__LEFT].sLimits[BRAKE_SW__RETRACT].eSwitchState;
+			eSwitchState_Right_Retract = sFCU.sBrakes[FCU_BRAKE__RIGHT].sLimits[BRAKE_SW__RETRACT].eSwitchState;
+
+			// Don't go to the next state until the brakes are retracted and limit
+			// switches are closed
+			if (eSwitchState_Left_Retract == SW_STATE__CLOSED && eSwitchState_Right_Retract == SW_STATE__CLOSED)
+			{
+				// Stepper motor, Limit switch and MLP show we are retracted.
+				// Let's go to next test case
+				sFCU.eAutoSeqState = AUTOSEQ_STATE__TEST_FUNCTION_BRAKE_HALF_WAY_ACTION;
+			}
+			else
+			{
+				// Stay here till time out happens
+				// todo Add a timeout here
+			}
+
+		case AUTOSEQ_STATE__TEST_FUNCTION_BRAKE_HALF_WAY_ACTION:
+
+			// Make sure again, brakes are retracted and the retract limit
+			// switches reflect the same state
+			// Get the position of the left and right brake
+			f32IBeam_Left_mm = f32FCU_BRAKES__Get_IBeam_mm(FCU_BRAKE__LEFT);
+			f32IBeam_Right_mm = f32FCU_BRAKES__Get_IBeam_mm(FCU_BRAKE__RIGHT);
+
+			// Add the tolerance to compensate for any possible error from sensors
+			f32IBeam_Left_mm += C_FCU__BRAKES__IBEAM_DIST_TOLERANCE_MM;
+			f32IBeam_Right_mm += C_FCU__BRAKES__IBEAM_DIST_TOLERANCE_MM;
+
+			// IF, Both the brakes distance from the Ibeam + tolerance because of
+			// the sensor/ADC error should be max i.e. fully retracted
+			if((f32IBeam_Left_mm >= C_FCU__BRAKES__MAX_IBEAM_DIST_LOW_BOUND_MM) && (f32IBeam_Left_mm <= C_FCU__BRAKES__MAX_IBEAM_DIST_UP_BOUND_MM))
+			{
+				// Yes, THEN, check if right brake is fully retracted, account for the errors from the
+				// sensor read
+				if((f32IBeam_Right_mm >= C_FCU__BRAKES__MAX_IBEAM_DIST_LOW_BOUND_MM) && (f32IBeam_Right_mm <= C_FCU__BRAKES__MAX_IBEAM_DIST_UP_BOUND_MM))
+				{
+					eSwitchState_Left_Retract = sFCU.sBrakes[FCU_BRAKE__LEFT].sLimits[BRAKE_SW__RETRACT].eSwitchState;
+					eSwitchState_Right_Retract = sFCU.sBrakes[FCU_BRAKE__RIGHT].sLimits[BRAKE_SW__RETRACT].eSwitchState;
+
+					// AND, retract limit switches for both left and right brakes
+					// should be closed
+					if (eSwitchState_Left_Retract == SW_STATE__CLOSED
+							&& eSwitchState_Right_Retract == SW_STATE__CLOSED)
+					{
+						// THEN, Request the brakes to move halfway
+						vFCU_BRAKES__Move_IBeam_Distance_mm(C_FCU__BRAKES__HALF_WAY_IBEAM_DIST_MM);
+
+						// Brakes asked to move half way. This won't happen immediately.
+						// Let's go to the next state to read the sensors for results
+						sFCU.eAutoSeqState = AUTOSEQ_STATE__TEST_FUNCTION_BRAKE_HALF_WAY_EXPECTED_RESULT;
+					}
+				}
+			}
+			else
+			{
+				// Stay in this until a time out
+				// todo design a time out.
+			}
+
+			break;
+
+		case AUTOSEQ_STATE__TEST_FUNCTION_BRAKE_HALF_WAY_EXPECTED_RESULT:
+			// In AUTOSEQ_STATE__TEST_FUNCTION_BRAKE_HALF_WAY_ACTION we moved the brakes
+			// half way between the fully retracted and extended position
+
+			// Get the position of the left and right brake
+			f32IBeam_Left_mm = f32FCU_BRAKES__Get_IBeam_mm(FCU_BRAKE__LEFT);
+			f32IBeam_Right_mm = f32FCU_BRAKES__Get_IBeam_mm(FCU_BRAKE__RIGHT);
+
+			// If the upper level state machine is working properly, then by the time we
+			// come here global switch states would have been updated
+			eSwitchState_Left_Extend = sFCU.sBrakes[FCU_BRAKE__LEFT].sLimits[BRAKE_SW__EXTEND].eSwitchState;
+			eSwitchState_Left_Retract = sFCU.sBrakes[FCU_BRAKE__LEFT].sLimits[BRAKE_SW__RETRACT].eSwitchState;
+			eSwitchState_Right_Extend = sFCU.sBrakes[FCU_BRAKE__RIGHT].sLimits[BRAKE_SW__EXTEND].eSwitchState;
+			eSwitchState_Right_Retract = sFCU.sBrakes[FCU_BRAKE__RIGHT].sLimits[BRAKE_SW__RETRACT].eSwitchState;
+
+			// None of the limit switches for left or right brake should be open,
+			// since the brakes have started moving inwards away from all the limit
+			// switches
+			if (eSwitchState_Right_Extend == SW_STATE__OPEN
+					&& eSwitchState_Right_Retract == SW_STATE__OPEN
+					&& eSwitchState_Left_Extend == SW_STATE__OPEN
+					&& eSwitchState_Left_Retract == SW_STATE__OPEN)
+			{
+				// All the limit switches open --> Good
+				// Now, check the distance of the left brake from the IBeam
+				// It should be somewhere halfway between fully retract and extend
+				if ((f32IBeam_Left_mm >= C_FCU__BRAKES__HALF_WAY_IBEAM_DIST_LOW_BOUND_MM) && (f32IBeam_Left_mm <= C_FCU__BRAKES__HALF_WAY_IBEAM_DIST_UP_BOUND_MM))
+				{
+					// Yes, THEN, check the distance of right brake from the IBeam
+					// It should be somewhere halfway between fully retract and extend
+					if ((f32IBeam_Right_mm >= C_FCU__BRAKES__HALF_WAY_IBEAM_DIST_LOW_BOUND_MM) && (f32IBeam_Right_mm <= C_FCU__BRAKES__HALF_WAY_IBEAM_DIST_UP_BOUND_MM))
+					{
+						// THEN, everything looks good. Let's move to the next test phase
+						sFCU.eAutoSeqState = AUTOSEQ_STATE__TEST_FUNCTION_BRAKE_FULL_EXTEND_ACTION;
+					}
+				}
+			}
+			else
+			{
+				// Stay here till time out happens
+				// todo Add a timeout here
+			}
+
+			break;
+
+		case AUTOSEQ_STATE__TEST_FUNCTION_BRAKE_FULL_EXTEND_ACTION:
+
+			// In the last "action", we moved the brakes half way
+			// Before we start this action, check if all the limit switches are open again
+			eSwitchState_Left_Extend = sFCU.sBrakes[FCU_BRAKE__LEFT].sLimits[BRAKE_SW__EXTEND].eSwitchState;
+			eSwitchState_Left_Retract = sFCU.sBrakes[FCU_BRAKE__LEFT].sLimits[BRAKE_SW__RETRACT].eSwitchState;
+			eSwitchState_Right_Extend = sFCU.sBrakes[FCU_BRAKE__RIGHT].sLimits[BRAKE_SW__EXTEND].eSwitchState;
+			eSwitchState_Right_Retract = sFCU.sBrakes[FCU_BRAKE__RIGHT].sLimits[BRAKE_SW__RETRACT].eSwitchState;
+
+			// None of the limit switches for left or right brake should be open,
+			// since the brakes have started moving inwards away from all the limit
+			// switches
+			if (eSwitchState_Right_Extend == SW_STATE__OPEN
+					&& eSwitchState_Right_Retract == SW_STATE__OPEN
+					&& eSwitchState_Left_Extend == SW_STATE__OPEN
+					&& eSwitchState_Left_Retract == SW_STATE__OPEN)
+			{
+				// THEN, Request the brakes to extend completely
+				vFCU_BRAKES__Move_IBeam_Distance_mm(C_FCU__BRAKES__MIN_IBEAM_DIST_MM);
+
+				// The deed is done, let's go to the next state to check if we
+				// are fully extended
+				sFCU.eAutoSeqState = AUTOSEQ_STATE__TEST_FUNCTION_BRAKE_FULL_EXTEND_EXPECTED_RESULT;
+			}
+			else
+			{
+				// Stay here till time out happens
+				// todo Add a timeout here
+			}
+
+			break;
+
+		case AUTOSEQ_STATE__TEST_FUNCTION_BRAKE_FULL_EXTEND_EXPECTED_RESULT:
+
+			// In the previous state we tried to move the brakes to fully
+			// extend position
+			eSwitchState_Left_Extend = sFCU.sBrakes[FCU_BRAKE__LEFT].sLimits[BRAKE_SW__EXTEND].eSwitchState;
+			eSwitchState_Left_Retract = sFCU.sBrakes[FCU_BRAKE__LEFT].sLimits[BRAKE_SW__RETRACT].eSwitchState;
+			eSwitchState_Right_Extend = sFCU.sBrakes[FCU_BRAKE__RIGHT].sLimits[BRAKE_SW__EXTEND].eSwitchState;
+			eSwitchState_Right_Retract = sFCU.sBrakes[FCU_BRAKE__RIGHT].sLimits[BRAKE_SW__RETRACT].eSwitchState;
+
+			// By the time the previous action completes, the left and right
+			// brake extend switches should be close and the retract limit
+			// switches for both the brakes should be open
+			if (eSwitchState_Right_Extend == SW_STATE__CLOSED
+					&& eSwitchState_Left_Extend == SW_STATE__CLOSED
+					&& eSwitchState_Right_Retract == SW_STATE__OPEN
+					&& eSwitchState_Left_Retract == SW_STATE__OPEN)
+			{
+				// Yes, THEN check the MLP reading to find the distance of the
+				// brakes from IBeam. It should be the minimum value allowed i.e.
+				// as close to the IBeam as possible
+				// Get the position of the left and right brake
+				f32IBeam_Left_mm = f32FCU_BRAKES__Get_IBeam_mm(FCU_BRAKE__LEFT);
+				f32IBeam_Right_mm = f32FCU_BRAKES__Get_IBeam_mm(FCU_BRAKE__RIGHT);
+
+				// Check if left brake is fully extended, account for the errors from the
+				// sensor read
+				if((f32IBeam_Left_mm >= C_FCU__BRAKES__MIN_IBEAM_DIST_LOW_BOUND_MM) && (f32IBeam_Left_mm <= C_FCU__BRAKES__MIN_IBEAM_DIST_UP_BOUND_MM))
+				{
+					// Yes, THEN, check if right brake is fully extended, account for the errors from the
+					// sensor read
+					if((f32IBeam_Right_mm >= C_FCU__BRAKES__MIN_IBEAM_DIST_LOW_BOUND_MM) && (f32IBeam_Right_mm <= C_FCU__BRAKES__MIN_IBEAM_DIST_UP_BOUND_MM))
+					{
+						// Yes, THEN, we are good to go for the next state.
+						sFCU.eAutoSeqState = AUTOSEQ_STATE__TEST_FUNCTION_BRAKE_FULL_RETRACT_ACTION;
+					}
+				}
+			}
+			else
+			{
+				// Stay here till time out happens
+				// todo Add a timeout here
+			}
+
+			break;
+
+		case AUTOSEQ_STATE__TEST_FUNCTION_BRAKE_FULL_RETRACT_ACTION:
+
+			// In the previous state we tried to move the brakes to fully
+			// extended position
+			eSwitchState_Left_Extend = sFCU.sBrakes[FCU_BRAKE__LEFT].sLimits[BRAKE_SW__EXTEND].eSwitchState;
+			eSwitchState_Left_Retract = sFCU.sBrakes[FCU_BRAKE__LEFT].sLimits[BRAKE_SW__RETRACT].eSwitchState;
+			eSwitchState_Right_Extend = sFCU.sBrakes[FCU_BRAKE__RIGHT].sLimits[BRAKE_SW__EXTEND].eSwitchState;
+			eSwitchState_Right_Retract = sFCU.sBrakes[FCU_BRAKE__RIGHT].sLimits[BRAKE_SW__RETRACT].eSwitchState;
+
+			// By the time the previous action completes, the left and right
+			// brake extend switches should be CLOSED and the retract limit
+			// switches for both the brakes should be OPEN
+			if (eSwitchState_Right_Extend == SW_STATE__CLOSED
+					&& eSwitchState_Left_Extend == SW_STATE__CLOSED
+					&& eSwitchState_Right_Retract == SW_STATE__OPEN
+					&& eSwitchState_Left_Retract == SW_STATE__OPEN)
+			{
+				// THEN, Request the brakes to retract completely
+				vFCU_BRAKES__Move_IBeam_Distance_mm(C_FCU__BRAKES__MIN_IBEAM_DIST_MM);
+
+				// The deed is done, let's go to the next state to check if we
+				// are fully extended
+				sFCU.eAutoSeqState = AUTOSEQ_STATE__TEST_FUNCTION_BRAKE_FULL_RETRACT_EXPECTED_RESULT;
+			}
+			else
+			{
+				// Stay here till time out happens
+				// todo Add a timeout here
+			}
+
+			break;
+
+		case AUTOSEQ_STATE__TEST_FUNCTION_BRAKE_FULL_RETRACT_EXPECTED_RESULT:
+
+			// In the previous state we tried to move the brakes to fully
+			// retract position
+			eSwitchState_Left_Extend = sFCU.sBrakes[FCU_BRAKE__LEFT].sLimits[BRAKE_SW__EXTEND].eSwitchState;
+			eSwitchState_Left_Retract = sFCU.sBrakes[FCU_BRAKE__LEFT].sLimits[BRAKE_SW__RETRACT].eSwitchState;
+			eSwitchState_Right_Extend = sFCU.sBrakes[FCU_BRAKE__RIGHT].sLimits[BRAKE_SW__EXTEND].eSwitchState;
+			eSwitchState_Right_Retract = sFCU.sBrakes[FCU_BRAKE__RIGHT].sLimits[BRAKE_SW__RETRACT].eSwitchState;
+
+			// By the time the previous action completes, the left and right
+			// brake extend switches should be OPEN and the retract limit
+			// switches for both the brakes should be CLOSED
+			if (eSwitchState_Right_Extend == SW_STATE__OPEN
+					&& eSwitchState_Left_Extend == SW_STATE__OPEN
+					&& eSwitchState_Right_Retract == SW_STATE__CLOSED
+					&& eSwitchState_Left_Retract == SW_STATE__CLOSED)
+			{
+				// Yes, THEN check the MLP reading to find the distance of the
+				// brakes from IBeam. It should be the max value allowed i.e.
+				// as far from the IBeam as possible
+				// Get the position of the left and right brake
+				f32IBeam_Left_mm = f32FCU_BRAKES__Get_IBeam_mm(FCU_BRAKE__LEFT);
+				f32IBeam_Right_mm = f32FCU_BRAKES__Get_IBeam_mm(FCU_BRAKE__RIGHT);
+
+				// Check if left brake is fully retracted, account for the errors from the
+				// sensor read
+				if((f32IBeam_Left_mm >= C_FCU__BRAKES__MAX_IBEAM_DIST_LOW_BOUND_MM) && (f32IBeam_Left_mm <= C_FCU__BRAKES__MAX_IBEAM_DIST_UP_BOUND_MM))
+				{
+					// Yes, THEN, check if right brake is fully retracted, account for the errors from the
+					// sensor read
+					if((f32IBeam_Right_mm >= C_FCU__BRAKES__MAX_IBEAM_DIST_LOW_BOUND_MM) && (f32IBeam_Right_mm <= C_FCU__BRAKES__MAX_IBEAM_DIST_UP_BOUND_MM))
+					{
+						// Yes, THEN, we are good to go for the next state.
+						// FOR NOW, this finishes our auto sequence testing
+						sFCU.eAutoSeqState = AUTOSEQ_STATE__IDLE;
+					}
+				}
+			}
+			else
+			{
+				// Stay here till time out happens
+				// todo Add a timeout here
+			}
+
 
 		case AUTOSEQ_STATE__TEST_FUNCTION_X:
 
@@ -120,6 +420,7 @@ Luint8 u8FCU_MAINSM_AUTO__Is_Abort(void)
 {
 	return 0;
 }
+
 
 #endif //#if C_LOCALDEF__LCCM655__ENABLE_THIS_MODULE == 1U
 //safetys
