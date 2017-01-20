@@ -1,7 +1,7 @@
 /**
  * @file		FCU__FCTL__MAIN_SM.C
  * @brief		Main state machine for the flight control unit
- * @author		Lachlan Grogan
+ * @author		Lachlan Grogan, Marek Gutt-Mostowy
  * @copyright	rLoop Inc.
  */
 /**
@@ -23,6 +23,16 @@
 //the structure
 extern struct _strFCU sFCU;
 
+//needs to be defined in the DB
+#define POD_MIN_X_POS 				500U
+
+
+//TODO: need the following function implemented
+
+//vFCU_FLIGHTCTRL_XXXXXX__GET_POD_SPEED();
+//vFCU_FLIGHTCTL_XXXXXX__GET_POD_REAR_X_POS();
+//vFCU_FLIGHTCTL_XXXXXX__GET_POD_VEL();
+
 /***************************************************************************//**
  * @brief
  * Init any variables as is needed by the main state machine
@@ -32,7 +42,7 @@ extern struct _strFCU sFCU;
  */
 void vFCU_FCTL_MAINSM__Init(void)
 {
-	sFCU.eMissionPhase = MISSION_PHASE__RESET;
+	sFCU.sStateMachine.eMissionPhase = MISSION_PHASE__RESET;
 
 	//init the auto sequence
 	vFCU_MAINSM_AUTO__Init();
@@ -51,9 +61,10 @@ void vFCU_FCTL_MAINSM__Process(void)
 {
 	Luint8 u8Counter;
 	Luint8 u8Test;
+	Luint8 u8TestsSuccesful;
 
-	//hande the state machine.
-	switch(sFCU.eMissionPhase)
+	//handle the state machine.
+	switch(sFCU.sStateMachine.eMissionPhase)
 	{
 
 		case MISSION_PHASE__RESET:
@@ -116,26 +127,21 @@ void vFCU_FCTL_MAINSM__Process(void)
 			#endif
 
 			//put the flight computer into startup mode now that everything has been initted.
-			sFCU.eMissionPhase = MISSION_PHASE__TEST_PHASE;
+			sFCU.sStateMachine.eMissionPhase = MISSION_PHASE__TEST;
 
 			break;
 
-		case MISSION_PHASE__TEST_PHASE:
-			//run what we need to in startup mode, checkout sensors and other diagnostics
 
-			//xxxxxxxxxxxxxxxxxxxxxxxxTEMPORARY @gsweriduk 15DEC xxxxxxxxxxxxxxxxxxxxxxxx
-			//sFCU.eMissionPhase = MISSION_PHASE__AUTO_SEQUENCE_MODE;
-			//xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-			break;
-
-		case MISSION_PHASE__AUTO_SEQUENCE_MODE:
-			//in this mode we are performing an auto-sequence
+		case MISSION_PHASE__TEST:
+			
+			//in this mode we are performing tests of all of the sensors and motors pl an auto-sequence
 
 			//see if we have an auto sequence abort
 			u8Test = u8FCU_MAINSM_AUTO__Is_Abort();
 			if(u8Test == 1U)
 			{
-				sFCU.eMissionPhase = RUN_STATE__FLIGHT_ABORT;
+				//move to RESET if tests aborted
+				sFCU.sStateMachine.eMissionPhase = MISSION_PHASE__RESET;
 			}
 			else
 			{
@@ -146,36 +152,125 @@ void vFCU_FCTL_MAINSM__Process(void)
 				}
 				else
 				{
-					//not busy and not abort, move to flight
-					sFCU.eMissionPhase = MISSION_PHASE__FLIGHT_MODE;
+					//not busy and not abort, set flag indicating tests succesful
+					u8TestsSuccesful = 1U;
+				}
+			}
+
+			//Get Pod Speed
+			Luint32 u32PodSpeed = vFCU_FLIGHTCTRL_XXXXXX__GET_POD_SPEED();
+
+			if (u8TestsSuccesful == 1U && sFCU.sOpStates.u8Lifted && (u32PodSpeed < PODSPEED_STANDBY))
+			{
+
+					sFCU.sStateMachine.eMissionPhase = MISSION_PHASE__PRE_RUN;
+			}
+			else
+			{
+
+				if(u32PodSpeed < PODSPEED_STANDBY)
+				{
+					sFCU.sStateMachine.eMissionPhase = MISSION_PHASE__TEST;
+				}
+				else
+				{
+					sFCU.sStateMachine.eMissionPhase = MISSION_PHASE__PUSHER_INTERLOCK;
 				}
 
 			}
+
+
 			break;
 
 
-		case MISSION_PHASE__PRE_RUN_PHASE:
+		case MISSION_PHASE__PRE_RUN:
+
+			//Transition to Pusher Interlock Phase based on the acceleration
+			//Not sure about how to call the right accelerometer and whether it indicates the right axis
+			if(sFCU.sAccel.sChannels[C_LOCALDEF__LCCM418__NUM_DEVICES].s32CurrentAccel_mmss > PODSPEED_STANDBY) 
+			{
+				sFCU.sStateMachine.eMissionPhase = MISSION_PHASE__PUSHER_INTERLOCK;
+			}
+			else
+			{
+				sFCU.sStateMachine.eMissionPhase = MISSION_PHASE__PRE_RUN;
+			}
 
 			break;
 
-		case MISSION_PHASE__PUSH_INTERLOCK_PHASE:
+
+		case MISSION_PHASE__PUSHER_INTERLOCK:
+
+			//transition to FLIGHT mode if the pod has reached the min_x_pos AND 1 second elapsed from the disconnection from the pusher
+			
+			Luint8   PUSHER_STATE = u8FCU_PUSHER__Get_PusherState(void);
+			Luint32  POD_REAR_X_POS = vFCU_FLIGHTCTL_XXXXXX__GET_POD_REAR_X_POS();
+
+
+			if(PUSHER_STATE == 0U)
+			{
+				//Enable the counter
+				sFCU.sStateMachine.EnableCounter == 1U;
+			}
+			else
+			{
+				//do nothing
+			}
+
+			if((POD_REAR_X_POS > POD_MIN_X_POS) && (sFCU.sStateMachine.Counter == 10U))
+			{
+				//Switch to Mission Phase Flight
+				sFCU.eMissionPhase = MISSION_PHASE__FLIGHT;
+				//Disable the counter
+				sFCU.sStateMachine.EnableCounter = 0U;
+				//Reset the counter
+				sFCU.sStateMachine.Counter = 0U;
+
+			}
+			else
+			{
+				sFCU.sStateMachine.eMissionPhase = MISSION_PHASE__PUSHER_INTERLOCK;
+			}
 
 			break;
 
-		case MISSION_PHASE__FLIGHT_MODE:
+
+		case MISSION_PHASE__FLIGHT:
 			//this is the flight mode controller
-			//if we are in this state, we are ready for flight
 
 			#if C_LOCALDEF__LCCM655__ENABLE_FLIGHT_CONTROL == 1U
 				vFCU_FLIGHTCTL__Process();
 			#endif
 
+			Luint32 u32PodVel = vFCU_FLIGHTCTL_XXXXXX__GET_POD_VEL();
+			
+			if(u32PodVel < PODSPEED_STANDBY)
 
+			{
+				sFCU.sStateMachine.eMissionPhase = MISSION_PHASE__POST_RUN;
+			}
+
+			else
+			{
+				sFCU.sStateMachine.eMissionPhase = MISSION_PHASE__FLIGHT;
+			}
 
 			break;
 
-		case RUN_STATE__FLIGHT_ABORT:
-			//cleanup the pod and safe it
+		case MISSION_PHASE__POST_RUN:
+			//post run state
+
+			Luint32 u32PodVel = vFCU_FLIGHTCTL_XXXXXX__GET_POD_VEL();
+			void vFCU_FCTL_MAINSM__EnterPreRun_Phase(Luint32 u32Key)
+
+			if(u32PodVel < PODSPEED_STANDBY) && (sFCU.sStateMachine.eGSCommands == POST_RUN_TO_PRE_RUN)
+			{
+				sFCU.sStateMachine.eMissionPhase = MISSION_PHASE__PRE_RUN;
+			}
+			else
+			{
+				sFCU.sStateMachine.eMissionPhase = MISSION_PHASE__POST_RUN;
+			}
 			break;
 
 		default:
@@ -185,7 +280,7 @@ void vFCU_FCTL_MAINSM__Process(void)
 	}//switch(sFCU.eRunState)
 
 	//always process these items after we have been initted
-	if(sFCU.eMissionPhase > MISSION_PHASE__RESET)
+	if(sFCU.sStateMachine.eMissionPhase > MISSION_PHASE__RESET)
 	{
 
 		//process the SC16IS interface always
@@ -269,6 +364,13 @@ void vFCU_FCTL_MAINSM__EnterPreRun_Phase(Luint32 u32Key)
 
 }
 
+void vFCU_FCTL_MAINSM__100MS_ISR(void)
+{
+   if (sFCU.sStateMachine.EnableCounter == 1U)
+   {
+        sFCU.sStateMachine.Counter++;
+   }
+}
 
 #endif //#if C_LOCALDEF__LCCM655__ENABLE_THIS_MODULE == 1U
 //safetys

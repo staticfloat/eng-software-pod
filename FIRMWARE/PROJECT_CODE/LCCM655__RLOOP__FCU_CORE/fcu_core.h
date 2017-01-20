@@ -46,13 +46,25 @@
 		/** main flight control structure */
 		struct _strFCU
 		{
+
 			/** Structure guard 1*/
 			Luint32 u32Guard1;
 
-			/** The mission phases
-			 * http://confluence.rloop.org/display/SD/1.+Determine+Mission+Phases+and+Operating+States
-			 * */
-			E_FCU__RUN_STATE_T eMissionPhase;
+			/** State Machine Structure **/
+			struct
+			{
+				/** The mission phases
+				 * http://confluence.rloop.org/display/SD/1.+Determine+Mission+Phases+and+Operating+States
+				 * */
+				E_FCU__MISSION_PHASE_T eMissionPhase;
+
+				/** Counter to count the time elapsed from the disconnection from the pusher **/
+				Luint32 Counter;
+
+				/** Enable Counter counting time elapsed from the disconnection from the pusher **/
+				Luint8 EnableCounter;
+
+			}sStateMachine
 
 			/** Auto sequence state machine */
 			E_FCU__AUTO_SEQUENCE_STATE_T eAutoSeqState;
@@ -72,7 +84,7 @@
 
 			#if C_LOCALDEF__LCCM655__ENABLE_BRAKES == 1U
 
-			/** Gloabl brakes system */
+			/** Global brakes system */
 			struct
 			{
 				/** individual brake fault flags */
@@ -318,8 +330,6 @@
 
 				/** Interlock switch status */
 				Luint8 u8Pusher_Status;
-
-
 
 				/** Timer of 10ms ticks used for switch state timing */
 				Luint32 u32SwtichTimer;

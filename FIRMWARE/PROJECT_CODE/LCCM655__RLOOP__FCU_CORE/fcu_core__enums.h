@@ -104,23 +104,6 @@
 		SET_ALL_HE_SPEED
 	} E_GS_COMMANDS;
 
-	/** Flight Control Unit Modes  */
-	// (added by @gsweriduk on 23 NOV 2016)
-	// Obtained on 11 NOV 2016 from FCU Spec http://confluence.rloop.org/display/SD/1.+Determine+Operating+Mode
-
-	typedef enum
-	{
-		STOPPED_UNLIFTED,
-		STOPPED_LIFTED,
-		AUXILIARY_PROPULSION,
-		UNEXPECTED_MOVE_ON_WHEELS,
-		PUSHER_INTERLOCK_MODE,
-		RUN_MODE_FLIGHT,
-		RUN_MODE_STANDBY,
-		RUN_MODE_STOPPED,
-		CONTROLLED_EMERGENCY_BRAKE,
-		FAIL_SAFE_BRAKE
-	} E_FCU_MODES;
 
 	/** State types for the THROTTLE state machine */
 	typedef enum
