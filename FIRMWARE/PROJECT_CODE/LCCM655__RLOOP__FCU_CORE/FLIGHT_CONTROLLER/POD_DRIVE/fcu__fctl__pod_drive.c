@@ -75,11 +75,17 @@ typedef enum
 	GIMBAL_FORWARD_LEVEL = 2U
 }E_FCU__GIMBAL_LEVEL;
 
-
+// GS pod stop command to add to fcu_core_net_rx.c:
+// not entirely sure if this the right function to call
+// need to handle 10 also with this command
+// so see what can be done to address both
+case NET_PKT__FCU_GEN__POD_STOP_COMMAND:
+	#if C_LOCALDEF__LCCM655__ENABLE_PODDRIVE_CONTROL == 1U
+		vFCU_FLIGHTCTL_PODDRIVE__SetPodStopCmd();
+	#endif
+	break;
 
 // TODO: need the following functions:
-//vFCU_FLIGHTCTL_HOVERENGINES__stop()
-//vFCU_FLIGHTCTL_HOVERENGINES__start()
 //vFCU_FLIGHTCTL_AUX_PROP__Stop()
 //vFCU_FLIGHTCTL_AUX_PROP__Disable()
 //vFCU_FLIGHTCTL_GIMBAL__SetLevel(GIMBAL_BACKWARD_LEVEL/GIMBAL_NEUTRAL_LEVEL/GIMBAL_FORWARD_LEVEL)
@@ -88,9 +94,6 @@ typedef enum
 //vFCU_FLIGHTCTL_EDDY_BRAKES__GimbalSpeedController() // pid controller for gimbals when speed < C_FCU__PODSPEED_MAX_SPEED_TO_STABILIZE
 //vFCU_FLIGHTCTL_EDDY_BRAKES__ApplyFullBrakes()  // add full eddy brakes until speed < C_FCU__PODSPEED_STANDBY
 //vFCU_FLIGHTCTL_XXXXXX__GetFrontPos()
-//vFCU_FLIGHTCTL_LIFTMECH__Dir(index,dir)
-//vFCU_FLIGHTCTL_LIFTMECH__Speed(index, speed)
-//vFCU_FLIGHTCTL_LIFTMECH__Get_MLP()
 //vFCU_PUSHER__GetState()
 //vFCU__POD_SPEED()	// BORROWED FROM HOVER ENGINE CONTROL
 //vFCU_NET_RX__GetGsCommTimer()
@@ -166,11 +169,8 @@ void vFCU_FLIGHTCTL_PODDRIVE__Process(void)
 				case PODDRIVE_PRERUN_RETRACT_LIFTMECH:
 					if (sFCU.sPodDrive.u8100MS_Timer == 0)
 					{
-						for (u8LiftMechIndex=0; u8LiftMechIndex < NUM_LIFTMECH_ACTUATORS; u8LiftMechIndex++)
-						{
-							vFCU_FLIGHTCTL_LIFTMECH_Dir(u8LiftMechIndex, 1);	//TODO: assuming 1 is up
-							vFCU_FLIGHTCTL_LIFTMECH_Speed(u8LiftMechIndex, C_FCU__LIFTMECH_ACTUATOR_NOM_UNLIFT_SPEED);
-						}
+						vFCU_FLIGHTCTL_LIFTMECH__SetDirAll(LIFTMECH_DIR_UP);
+						vFCU_FLIGHTCTL_LIFTMECH__SetSpeedAll(C_FCU__LIFTMECH_ACTUATOR_NOM_UNLIFT_SPEED);
 					}
 					if (vFCU_FLIGHTCTL_LIFTMECH__Get_MLP() < C_FCU__LIFTMECH_RETRACTED_MLP_DISTANCE)
 					{
