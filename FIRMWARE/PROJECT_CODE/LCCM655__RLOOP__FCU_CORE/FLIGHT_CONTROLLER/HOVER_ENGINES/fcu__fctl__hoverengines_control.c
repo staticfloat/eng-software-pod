@@ -140,7 +140,7 @@ void vFCU_FLIGHTCTL_HOVERENGINES__Process(void)
 			if((sFCU.sHoverengines.u16HoverenginesCommands == ENABLE_HE) ||
 			   (sFCU.sHoverengines.sIntParams.u8Enable == 1U && sFCU.sHoverengines.sIntParams.u8RunAuto == 1U))
 			{
-				u32PodSpeed = vFCU__POD_SPEED();
+				u32PodSpeed = u32FCU_FLIGHTCTL_XXXXX__PodSpeed();
 				if(u32PodSpeed < PODSPEED_STANDBY)
 				{
 					Luint8 u8Counter = 0;
@@ -179,7 +179,7 @@ void vFCU_FLIGHTCTL_HOVERENGINES__Process(void)
 			if((sFCU.sHoverengines.u16HoverenginesCommands == STATIC_HOVERING) ||
 			   (sFCU.sHoverengines.sIntParams.u8Enable == 1U && sFCU.sHoverengines.sIntParams.u8RunAuto == 1U)) //If we are hovering and HEs are enabled and we are in autonomous flight mode 
 			{
-				u32PodSpeed = vFCU__POD_SPEED(); //read the pod speed
+				u32PodSpeed = u32FCU_FLIGHTCTL_XXXXX__PodSpeed(); //read the pod speed
 				if(sFCU.sOpStates.u8Lifted && (u32PodSpeed < PODSPEED_STANDBY) && sFCU.sHoverengines.sIntParams.u8TempVar == 0U) // comparison value to be defined
 				{
 					vFCU_COOLING__Set_Valve(1, 0.5, 1.5); // to be changed (this function is not yet implemented
