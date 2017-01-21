@@ -24,9 +24,20 @@ Upon reception of Enable Auxiliary Propulsion command from Ground Station, if th
 - post-run phase 
 and if all hover engine RPM feedback are 0, then the FCU shall set aux prop enabled to true.
 
+# receive enable command
+#	if phase == (test || prerun || postrun) && all rpm == 0
+#		aux prop enable = true
+
 4.2. Disable Auxiliary Propulsion
 Upon reception of Disable Auxiliary Propulsion command from Ground Station, then the FCU shall set aux prop enabled to false.
 If the mission phase is different from test phase, pre-run phase or post-run phase, then the FCU shall automatically set aux prop enabled to false.
+
+# receive disable command
+#	aux prop enable = false
+
+# state machine:
+# if phase != (test || prerun || postrun)
+#	aux prop enable = false
 
 4.3. Drive Pod with Auxiliary Propulsion
 Upon reception of Auxiliary Propuslion Speed from Ground Station, if aux prop enabled is true, then the FCU shall command this speed to each auxiliary propulsion motor (to be detailed).
@@ -54,7 +65,7 @@ struct
 // add to fcu_core_enums.h in pod drive section:
 typedef enum
 {
-	AUX_PROPULSION_GS_POD_STOP = 0U
+	AUX_PROPULSION_GS_POD_STOP = 0U;
 }E_FCU__AUX_PROPULSION_GS_COMM;
 
 void vFCU_FLIGHTCTL_AUX_PROPULSION__Enable(void)
@@ -69,32 +80,89 @@ void vFCU_FLIGHTCTL_AUX_PROPULSION__Disable(void)
 
 void vFCU_FLIGHTCTL_AUX_PROPULSION__Process(void)
 {
+	// handle commands from GS
+	vFCU_FLIGHTCTL_AUX_PROPULSION__ManualCommandsHandle();
 
-	switch(sFCU.eMissionPhase)
+	// enable/disable propulsion
+	if (sAuxPropulsion.u8AuxPropulsionEnabled == 1U)
+		vFCU_FLIGHTCTL_AUX_PROPULSION__Enable();
+	else
+		vFCU_FLIGHTCTL_AUX_PROPULSION__Disable();
+
+	if (sFCU.eMissionPhase == MISSION_PHASE__FLIGHT_MODE ||
+		sFCU.eMissionPhase == MISSION_PHASE__PUSH_INTERLOCK_PHASE)
 	{
-		case MISSION_PHASE__TEST_PHASE:
-		case MISSION_PHASE__PRE_RUN_PHASE:
-		case MISSION_PHASE__POST_RUN:
+		sAuxPropulsion.u8AuxPropulsionEnabled = 0U;
+	}
+}
+
+void vFCU_FLIGHTCTL_AUX_PROPULSION__ManualCommandsHandle(void)
+{
+	switch(sFCU.sAuxPropulsion.eGSCommand)
+	{
+		case M_ENABLE_AUX_PROPULSION:
 			// hover engines RPMs
-			Luint16 u16HE0RPM = _strFCU.strThrottleInterfaceData.u16CurrentRPM[0];
-			Luint16 u16HE1RPM = _strFCU.strThrottleInterfaceData.u16CurrentRPM[1];
-			Luint16 u16HE2RPM = _strFCU.strThrottleInterfaceData.u16CurrentRPM[2];
-			Luint16 u16HE3RPM = _strFCU.strThrottleInterfaceData.u16CurrentRPM[3];
+			Luint16 pu16HE0RPM = 0U;
+			s16FCU_ASI_CTRL__ReadMotorRpm(0, &pu16HE0RPM);
+			Luint16 pu16HE1RPM = 0U;
+			s16FCU_ASI_CTRL__ReadMotorRpm(1, &pu16HE1RPM);
+			Luint16 pu16HE2RPM = 0U;
+			s16FCU_ASI_CTRL__ReadMotorRpm(2, &pu16HE2RPM);
+			Luint16 pu16HE3RPM = 0U;
+			s16FCU_ASI_CTRL__ReadMotorRpm(3, &pu16HE3RPM);
+			Luint16 pu16HE4RPM = 0U;
+			s16FCU_ASI_CTRL__ReadMotorRpm(4, &pu16HE4RPM);
+			Luint16 pu16HE5RPM = 0U;
+			s16FCU_ASI_CTRL__ReadMotorRpm(5, &pu16HE5RPM);
+			Luint16 pu16HE6RPM = 0U;
+			s16FCU_ASI_CTRL__ReadMotorRpm(6, &pu16HE6RPM);
+			Luint16 pu16HE7RPM = 0U;
+			s16FCU_ASI_CTRL__ReadMotorRpm(7, &pu16HE7RPM);
+
 			// if all engines have RPM 0 then enable the aux propulsion
-			if (u16HE0RPM == 0 && u16HE1RPM == 0 && u16HE2RPM == 0 && u16HE3RPM == 0) {
-				vFCU_FLIGHTCTL_AUX_PROPULSION__Enable();
+			if (u16HE0RPM == 0U &&
+				u16HE1RPM == 0U &&
+				u16HE2RPM == 0U &&
+				u16HE3RPM == 0U &&
+				u16HE4RPM == 0U &&
+				u16HE5RPM == 0U &&
+				u16HE6RPM == 0U &&
+				u16HE7RPM == 0U )
+			{
 				sAuxPropulsion.u8AuxPropulsionEnabled = 1U;
 			}
 			break;
 
-		case MISSION_PHASE__PUSH_INTERLOCK_PHASE:
-		case MISSION_PHASE__FLIGHT_MODE:
+		case M_DISABLE_AUX_PROPULSION:
 			sAuxPropulsion.u8AuxPropulsionEnabled = 0U;
-			vFCU_FLIGHTCTL_AUX_PROPULSION__Disable();
+			break;
+
+		case M_SET_SPEED_AP1:
+			vSetAuxPropulsionSpeed(0, 1, C_FCU__AUX_PROPULSION_NOM_SPEED)
+			break;
+
+		case M_SET_SPEED_AP2:
+			vSetAuxPropulsionSpeed(1, 1, C_FCU__AUX_PROPULSION_NOM_SPEED)
+			break;
+
+		case M_SET_SPEED_AP3:
+			vSetAuxPropulsionSpeed(2, 1, C_FCU__AUX_PROPULSION_NOM_SPEED)
+			break;
+
+		case M_SET_SPEED_AP4:
+			vSetAuxPropulsionSpeed(3, 1, C_FCU__AUX_PROPULSION_NOM_SPEED)
 			break;
 	}
 }
 
+void vSetAuxPropulsionSpeed(Luint8 motorIndex, Luint8 direction, Luint8 speed) 
+{
+	if (sAuxPropulsion.u8AuxPropulsionEnabled == 1U) 
+	{
+		vFCU_FLIGHTCTL_AUX_PROPULSION_Dir(motorIndex, direction);
+		vFCU_FLIGHTCTL_AUX_PROPULSION_Speed(motorIndex, speed);
+	}
+}
 
 #endif //C_LOCALDEF__LCCM655__ENABLE_AUX_PROPULSION_CONTROL
 #ifndef C_LOCALDEF__LCCM655__ENABLE_AUX_PROPULSION_CONTROL
