@@ -30,6 +30,7 @@ extern struct _strFCU sFCU;
 #define C_FCU__EDDYBRAKES_APPL_MLP_DISTANCE
 #define C_FCU__EDDYBRAKES_NOM_RELEASE_SPEED
 #define C_FCU__EDDYBRAKES_RELEASE_MLP_DISTANCE
+#define C_FCU__EDDYBRAKES_STEPPER_MOTOR_MAX_TEMP
 
 // add to fcu_core_enums.h in lift mech section:
 typedef enum
@@ -164,10 +165,14 @@ case NET_PKT__FCU_EDDYBRAKES__FULL_BRAKES:
 
 // start of this module
 
+void vFCU_FLIGHTCTL_EDDY_BRAKES__ControlledEmergencyBrake()
+{
+	// controlled full eddy brakes until speed < C_FCU__PODSPEED_STANDBY
+	// need a PID for this
+}
+
 void vFCU_FLIGHTCTL_EDDY_BRAKES__ApplyFullBrakes(void)
 {
-	// split this into two calls, one from pod drive and one from GS comm?
-	// add full eddy brakes until speed < C_FCU__PODSPEED_STANDBY
 	vFCU_FLIGHTCTL_EDDYBRAKES__SetDirAll(EDDYBRAKES_INWARD);
 	vFCU_FLIGHTCTL_EDDYBRAKES__SetSpeedAll(C_FCU__EDDYBRAKES_NOM_APPL_SPEED); //todo add time
 }
@@ -192,6 +197,11 @@ void vFCU_FLIGHTCTL_EDDY_BRAKES__GimbalSpeedController(void)
 	// call Adrian's controller
 	// pid controller for gimbals when speed < C_FCU__PODSPEED_MAX_SPEED_TO_STABILIZE
 	// pid controller should ensure eddy brakes are actuated symmetrically
+}
+
+Luint8 u8FCU_FLIGHTCTL_EDDY_BRAKES_GetStepMotorTemp(E_FCU__EDDYBRAKES_ACTUATOR actuator)
+{
+	// lower level function to get stepper motor for the actuator specified
 }
 
 void vFCU_FLIGHTCTL_EDDYBRAKES__SetDirAll(E_FCU__EDDYBRAKES_DIRECTION dir)

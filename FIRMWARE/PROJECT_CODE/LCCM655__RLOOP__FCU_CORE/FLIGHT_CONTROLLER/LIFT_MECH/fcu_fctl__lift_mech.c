@@ -168,7 +168,7 @@ void vFCU_FLIGHTCTL_LIFTMECH__Release(void)
 	}
 }
 
-void vFCU_FLIGHTCTL_LIFTMECH__Get_MLP(void)
+Luint32 vFCU_FLIGHTCTL_LIFTMECH__Get_MLP(void)
 {
 	// report MLP distance
 	// add lower level function for this

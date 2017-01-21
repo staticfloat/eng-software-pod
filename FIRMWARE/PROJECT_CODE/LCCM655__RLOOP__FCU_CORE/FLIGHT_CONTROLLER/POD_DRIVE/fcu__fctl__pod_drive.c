@@ -1,7 +1,7 @@
 /**
 * @file       FCU__FCTRL__POD_DRIVE.C
-* @brief      Pod drive control
-* @author	  Nazneen Khan
+* @brief      Pod Drive Control
+* @author	  Nazneen Khan, Marek Gutt-Mostowy
 * @copyright  rLoop Inc.
 */
 /**
@@ -29,9 +29,9 @@ extern struct _strFCU sFCU;
 #define C_FCU__GS_COMM_LOSS_DELAY	// should go in udp rx section
 #define C_FCU__POD_TARGET_POINT_MARGIN_POS
 #define C_FCU__POD_STOP_X_POS
-#define C_FCU__PODSPEED_STANDBY
-#define C_FCU__PODSPEED_MAX_SPEED_TO_STABILIZE
-#define C_FCU__PODSPEED_TOO_HIGH
+#define C_FCU__XXXXX_PODSPEED_STANDBY
+#define C_FCU__XXXXX_PODSPEED_MAX_SPEED_TO_STABILIZE
+#define C_FCU__XXXXX_PODSPEED_TOO_HIGH
 #define C_FCU__LIFTMECH_RETRACTED_MLP_DISTANCE
 #define C_FCU__LIFTMECH_ACTUATOR_NOM_UNLIFT_SPEED
 
@@ -45,6 +45,7 @@ Luint32 u32_10MS_GS_COMM_Timer;
 #if C_LOCALDEF__LCCM655__ENABLE_PODDRIVE_CONTROL == 1U
 struct
 {
+	/** Main state machine*/
 	E_FCU__PODDRIVE_PRERUN_STATE ePreRunState;
 	E_FCU__PODDRIVE_GS_COMM eGSCommand;
 	Luint8 u8100MS_Timer;
@@ -55,7 +56,8 @@ struct
 // add to fcu_core_enums.h in pod drive section:
 typedef enum
 {
-	PODDRIVE_GS_POD_STOP = 0U
+	PODDRIVE_GS_NO_CMD = 0U,
+	PODDRIVE_GS_POD_STOP = 1U
 }E_FCU__PODDRIVE_GS_COMM;
 
 typedef enum
@@ -91,7 +93,7 @@ case NET_PKT__FCU_GEN__POD_STOP_COMMAND:
 //vFCU_FLIGHTCTL_GIMBAL__SetLevel(GIMBAL_BACKWARD_LEVEL/GIMBAL_NEUTRAL_LEVEL/GIMBAL_FORWARD_LEVEL)
 //vFCU_FLIGHTCTL_XXXXXX__GetFrontPos()
 //vFCU_PUSHER__GetState()
-//vFCU__POD_SPEED()	// BORROWED FROM HOVER ENGINE CONTROL
+//u32FCU_FLIGHTCTL_XXXXX__PodSpeed()	// BORROWED FROM HOVER ENGINE CONTROL
 //vFCU_NET_RX__GetGsCommTimer()
 
 
@@ -120,8 +122,6 @@ void vFCU_FLIGHTCTL_PODDRIVE__Process(void)
 			break;
 
 		case MISSION_PHASE__PRE_RUN_PHASE:
-			Luint8 u8LiftMechIndex;
-
 			if (vFCU_NET_RX__GetGsCommTimer() > C_FCU__GS_COMM_LOSS_DELAY)
 			{
 				vFCU_FLIGHTCTL_PODDRIVE__Stop();
@@ -134,7 +134,7 @@ void vFCU_FLIGHTCTL_PODDRIVE__Process(void)
 					{
 						vFCU_FLIGHTCTL_EDDY_BRAKES__Release();
 					}
-					u32PodSpeed = vFCU__POD_SPEED();
+					u32PodSpeed = u32FCU_FLIGHTCTL_XXXXX__PodSpeed;
 					if (sFCU.sOpStates.u8Lifted && (u32PodSpeed < C_FCU__PODSPEED_STANDBY)))
 					{
 						sFCU.sPodDrive.ePreRunState = PODDRIVE_PRERUN_START_HE_STATE;
@@ -168,7 +168,7 @@ void vFCU_FLIGHTCTL_PODDRIVE__Process(void)
 						vFCU_FLIGHTCTL_LIFTMECH__SetDirAll(LIFTMECH_DIR_UP);
 						vFCU_FLIGHTCTL_LIFTMECH__SetSpeedAll(C_FCU__LIFTMECH_ACTUATOR_NOM_UNLIFT_SPEED);
 					}
-					if (vFCU_FLIGHTCTL_LIFTMECH__Get_MLP() < C_FCU__LIFTMECH_RETRACTED_MLP_DISTANCE)
+					if (u32FCU_FLIGHTCTL_LIFTMECH__Get_MLP() < C_FCU__LIFTMECH_RETRACTED_MLP_DISTANCE)
 					{
 						sFCU.sPodDrive.ePreRunState = PODDRIVE_PRERUN_GIMBAL_BACKWARD;
 						sFCU.sPodDrive.u8100MS_Timer = 0;
@@ -215,13 +215,16 @@ void vFCU_FLIGHTCTL_PODDRIVE__Process(void)
 
 
 		case MISSION_PHASE__FLIGHT_MODE:
-			u32PodPos = vFCU_FLIGHTCTL_XXXXXX__GetFrontPos();
-			u32PodSpeed = vFCU__POD_SPEED();
+			u32PodPos = u32FCU_FLIGHTCTL_XXXXXX__GetFrontPos();
+			u32PodSpeed = u32FCU_FLIGHTCTL_XXXXX__PodSpeed;
 
-			if (sFCU.sPodDrive.eGSCommand == PODDRIVE_GS_POD_STOP;) || (u32PodSpeed > C_FCU__PODSPEED_TOO_HIGH) || (FCU watchdog failure))
+			if (sFCU.sPodDrive.eGSCommand == PODDRIVE_GS_POD_STOP;) || (u32PodSpeed > C_FCU__PODSPEED_TOO_HIGH) || (FCU watchdog failure)
+					|| (u8FCU_FLIGHTCTL_EDDY_BRAKES_GetStepMotorTemp(EDDYBRAKES_Left) > C_FCU__EDDYBRAKES_STEPPER_MOTOR_MAX_TEMP)
+					|| (u8FCU_FLIGHTCTL_EDDY_BRAKES_GetStepMotorTemp(EDDYBRAKES_Right) > C_FCU__EDDYBRAKES_STEPPER_MOTOR_MAX_TEMP))
+
 			{
 				// controlled emergency breaking
-				vFCU_FLIGHTCTL_EDDY_BRAKES__ApplyFullBrakes();  // add full eddy brakes until speed < C_FCU__PODSPEED_STANDBY
+				vFCU_FLIGHTCTL_EDDY_BRAKES__ControlledEmergencyBrake();  // add full eddy brakes until speed < C_FCU__PODSPEED_STANDBY
 			}
 			else
 			{
@@ -245,19 +248,20 @@ void vFCU_FLIGHTCTL_PODDRIVE__Process(void)
 			}
 			else
 			{
-				Luint32 u32PodPos = vFCU_FLIGHTCTL_XXXXXX__GetFrontPos();
-				Luint32 u32PodSpeed = vFCU__POD_SPEED();
+				Luint32 u32PodPos = u32FCU_FLIGHTCTL_XXXXXX__GetFrontPos();
+				Luint32 u32PodSpeed = u32FCU_FLIGHTCTL_XXXXX__PodSpeed;
 
-				vFCU_FLIGHTCTL_EDDY_BRAKES__ApplyFullBrakes();  // add full eddy brakes until speed < C_FCU__PODSPEED_STANDBY; keep applying if called again
+				vFCU_FLIGHTCTL_EDDY_BRAKES__ApplyFullBrakes();
 				if ((C_FCU__POD_STOP_X_POS - u32PodPos) > C_FCU__POD_TARGET_POINT_MARGIN_POS)
 				{
-					vFCU_FLIGHTCTL_GIMBAL__SetLevel(GIMBAL_FORWARD_LEVEL);	// until reach target position
 					vFCU_FLIGHTCTL_EDDY_BRAKES__Release();
+					vFCU_FLIGHTCTL_EDDY_BRAKES__GimbalSpeedController();	// until reach target position
+					vFCU_FLIGHTCTL_EDDY_BRAKES__ApplyFullBrakes();
 				}
 				else if (u32PodSpeed < C_FCU__PODSPEED_STANDBY)
 				{
 					vFCU_FLIGHTCTL_GIMBAL__SetLevel(GIMBAL_NEUTRAL_LEVEL);
-					vFCU_FLIGHTCTL_HOVERENGINES__stop()
+					vFCU_FLIGHTCTL_HOVERENGINES__stop();
 				}
 			}
 			break;
