@@ -1,5 +1,5 @@
 /**
-* @file       FCU__FCTRL__LIFT_MECH.C
+* @file       FCU__FCTL__LIFT_MECH.C
 * @brief      Lift Mechanism Control
 * @author	  Nazneen Khan
 * @copyright  rLoop Inc.

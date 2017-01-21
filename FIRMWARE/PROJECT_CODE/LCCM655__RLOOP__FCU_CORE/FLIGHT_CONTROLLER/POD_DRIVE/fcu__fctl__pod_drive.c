@@ -89,10 +89,6 @@ case NET_PKT__FCU_GEN__POD_STOP_COMMAND:
 //vFCU_FLIGHTCTL_AUX_PROP__Stop()
 //vFCU_FLIGHTCTL_AUX_PROP__Disable()
 //vFCU_FLIGHTCTL_GIMBAL__SetLevel(GIMBAL_BACKWARD_LEVEL/GIMBAL_NEUTRAL_LEVEL/GIMBAL_FORWARD_LEVEL)
-//vFCU_FLIGHTCTL_EDDY_BRAKES__Release()
-//vFCU_FLIGHTCTL_EDDY_BRAKES__GainScheduleController(speed)	// pid controller for brakes until position < C_FCU__POD_STOP_X_POS
-//vFCU_FLIGHTCTL_EDDY_BRAKES__GimbalSpeedController() // pid controller for gimbals when speed < C_FCU__PODSPEED_MAX_SPEED_TO_STABILIZE
-//vFCU_FLIGHTCTL_EDDY_BRAKES__ApplyFullBrakes()  // add full eddy brakes until speed < C_FCU__PODSPEED_STANDBY
 //vFCU_FLIGHTCTL_XXXXXX__GetFrontPos()
 //vFCU_PUSHER__GetState()
 //vFCU__POD_SPEED()	// BORROWED FROM HOVER ENGINE CONTROL
