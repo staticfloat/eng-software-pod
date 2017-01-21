@@ -47,6 +47,7 @@ NET_PKT__FCU_LIFTMECH__SET_DIR
 NET_PKT__FCU_LIFTMECH__SET_SPEED
 NET_PKT__FCU_LIFTMECH__SET_GROUP_DIR
 NET_PKT__FCU_LIFTMECH__SET_GROUP_SPEED
+NET_PKT__FCU_LIFTMECH__RELEASE
 
 // GS lift mech commands to add to fcu_core_net_rx.c:
 // assuming get actuator and value in u32blocks
@@ -139,6 +140,12 @@ case NET_PKT__FCU_LIFTMECH__SET_GROUP_SPEED:
 	//set speed of all mech lift actuators
 	#if C_LOCALDEF__LCCM655__ENABLE_LIFT_MECH_CONTROL == 1U
 		vFCU_FLIGHTCTL_LIFTMECH__SetSpeedAll(u32Block[0]);
+	#endif
+	break;
+case NET_PKT__FCU_LIFTMECH__RELEASE:
+	//release lift mechanism
+	#if C_LOCALDEF__LCCM655__ENABLE_LIFT_MECH_CONTROL == 1U
+		vFCU_FLIGHTCTL_LIFTMECH__Release();
 	#endif
 	break;
 
