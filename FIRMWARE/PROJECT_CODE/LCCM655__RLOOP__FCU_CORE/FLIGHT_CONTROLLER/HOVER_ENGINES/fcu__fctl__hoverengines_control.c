@@ -134,7 +134,7 @@ void vFCU_FLIGHTCTL_HOVERENGINES__Process(void)
 		case HOVERENGINES_STATE__IDLE:
 			// this is the idle state: Hover Engines are disabled.
 			// if is received the "Enable hover engines command"
-			// or if is active the autonomous behaviour set by the TOD_DRIVE FSM
+			// or if is active the autonomous behaviour set by the POD_DRIVE FSM
 			// and the pod speed is lower than the pod standby speed
 			// than we enable the Hover Engines and we move to the next state
 			if((sFCU.sHoverengines.u16HoverenginesCommands == ENABLE_HE) ||
@@ -214,7 +214,7 @@ void vFCU_FLIGHTCTL_HOVERENGINES__Process(void)
 
 
 		case HOVERENGINES_STATE__START_STATIC_HOVERING:
-			// In this state HE speed for the 1th group was set.
+			// In this state HE speed for the 1st group was set.
 			// for the second group of hoverengines, the speed is linearly
 			// set from 0 to the hover engine nominal RPM
 			// it switch state only when the measured RPM reach
@@ -263,13 +263,15 @@ void vFCU_FLIGHTCTL_HOVERENGINES__Process(void)
 			for(u8Counter = 1; u8Counter < 8; u8Counter++) // VERIFY PARAMETERS
 			{
 				// RPM, Temperature and Current are monitored,
-				// a fault is reported if those values goes out of the safety range.
+				// a fault is reported if those values go out of the safety range.
 				Luint64* pu64Rpm;
 				Luint64* pu64Current;
 				Luint64* pu64Temp;
+
 				s16FCU_ASI_CTRL__ReadMotorRpm(u8Counter,  &pu64Rpm);
-				s16FCU_ASI_CTRL__ReadMotorCurrent(u8Counter,  &pu64Current));
+				s16FCU_ASI_CTRL__ReadMotorCurrent(u8Counter,  &pu64Current);
 				s16FCU_ASI_CTRL__ReadControllerTemperature(u8Counter, &pu64Temp);
+
 				if((pu64Rpm > HOVER_ENGINE_MAX_RPM_IN_HOVERING) || (pu64Rpm < HOVER_ENGINE_MIN_RPM_IN_HOVERING))
 					{/* Fault handle TO DO */ }
 				if((pu64Current > HOVER_ENGINE_MAX_CURRENT) || (pu64Current < HOVER_ENGINE_MIN_CURRENT))
