@@ -31,7 +31,9 @@ extern struct _strFCU sFCU;
 //TODO:
 //needs to be defined in the DB
 #define C_FCU__NAV_POD_MIN_X_POS					(500U)
+#define C_FCU__NAV_MAX_UNLIFTED_HEIGHT				(10) //define exact value
 #define C_FCU__MAIN_SM_PUSHER_RELEASE_DELAY			(10U)
+
 
 //TODO: Process timer function needs to be called in fcu_core.c under vFCU__RTI_100MS_ISR(void)
 
@@ -45,6 +47,7 @@ extern struct _strFCU sFCU;
 //u32FCU_FLIGHTCTL_NAV__PodSpeed();
 //u32FCU_FLIGHTCTL_NAV__GetFrontPos();
 //u32FCU_FLIGHTCTL_NAV__PodSpeed();
+//s16FCU_FLIGHTCTL_LASERORIENT__Get_Z_Pos()
 
 //TODO: Add struct to fcu_core.h inside of _strFCU:
 
@@ -61,6 +64,41 @@ struct
 
 	/** Enable Counter counting time elapsed from the disconnection from the pusher **/
 	Luint8 EnableCounter;
+
+	/** Enum for Pod Status for SpaceX telemetry */
+	E_FCU__POD_STATUS ePodStatus;
+
+	/** Operating States Structure*/
+	struct
+	{
+		/** Lifted State */
+		Luint8 u8Lifted;
+
+		/** Unlifted State */
+		Luint8 u8Unlifted;
+
+		/** Static Hovering */
+		Luint8 u8StaticHovering;
+
+		/** Gimballing Adjustment State */
+		Luint8 u8GimbAdj;
+
+		/** Ready For Push State */
+		Luint8 u8ReadyForPush;
+
+		/** Pushing State */
+		Luint8 u8Pushing;
+
+		/** Coast State */
+		Luint8 u8Coast;
+
+		/** Braking State */
+		Luint8 u8Braking;
+
+		/** Controlled Emergency State */
+		Luint8 u8CtlEmergBraking;
+
+	}sOpStates
 
 }sStateMachine
 
@@ -96,7 +134,29 @@ typedef enum
 
 }E_FCU__MISSION_PHASE_T;
 
+//TODO: Add to fcu_core__enums.h
 
+typedef enum
+{
+	/** If tests failed */
+	POD_STATUS__FAULT = 0U,
+
+	/** Otherwise */
+	POD_STATUS__IDLE = 1U,
+
+	/** If ready for push */
+	POD_STATUS__READY = 2U,
+
+	/** If pushing */
+	POD_STATUS__PUSHING = 3U,
+
+	/** If coasting */
+	POD_STATUS__COAST = 4U,
+
+	/** If braking */
+	POD_STATUS__BRAKING = 5U
+
+}E_FCU__POD_STATUS;
 
 /***************************************************************************//**
  * @brief
@@ -225,7 +285,7 @@ void vFCU_FCTL_MAINSM__Process(void)
 			//Get Pod Speed
 			Luint32 u32PodSpeed = u32FCU_FLIGHTCTL_NAV__PodSpeed();
 
-			if (u8TestsSuccesful == 1U && sFCU.sOpStates.u8Lifted && (u32PodSpeed < PODSPEED_STANDBY))
+			if (u8TestsSuccesful == 1U && sFCU.sStateMachine.sOpStates.u8Lifted && (u32PodSpeed < PODSPEED_STANDBY))
 			{
 
 					sFCU.sStateMachine.eMissionPhase = MISSION_PHASE__PRE_RUN;
@@ -320,6 +380,9 @@ void vFCU_FCTL_MAINSM__Process(void)
 				sFCU.sStateMachine.eMissionPhase = MISSION_PHASE__FLIGHT;
 			}
 
+			//Disable the counter
+			sFCU.sStateMachine.EnableCounter == 0U;
+
 			break;
 
 		case MISSION_PHASE__POST_RUN:
@@ -409,10 +472,9 @@ void vFCU_FCTL_MAINSM__Process(void)
 			vFCU_LGU__Process();
 		#endif
 
+		//TODO: NOT MENTIONED ANYWHERE ELSE
 		//process auto-sequence control
 		vFCU_FCTL_MAINSM_AUTO__Process();
-
-
 
 	}
 	else
@@ -431,10 +493,120 @@ void vFCU_FCTL_MAINSM__EnterPreRun_Phase(Luint32 u32Key)
 
 void vFCU_FCTL_MAINSM__100MS_ISR(void)
 {
+	//Enable/Disable Counter
    if (sFCU.sStateMachine.EnableCounter == 1U)
    {
         sFCU.sStateMachine.Counter++;
    }
+   else
+   {
+   		//do nothing
+   }
+}
+
+
+//For no on put in here. Might be moved to a new file
+void vFCU_FCTL_MAINSM__DeterminePodState(void)
+{
+	Luint32 u32PodSpeed;
+	Luint32 u32PodZPos;
+
+
+	u32PodZPos = s16FCU_FLIGHTCTL_LASERORIENT__Get_Z_Pos();
+	//Determine if Lifted
+	if(u32PodZPos < C_FCU__LASERORIENT_MAX_UNLIFTED_HEIGHT)
+	{
+		sFCU.sStateMachine.sOpStates.u8Unlifted = 0U;
+	}
+	else
+	{
+		sFCU.sStateMachine.sOpStates.u8Unlifted = 1U;
+	}
+
+	//Determine if Unlifted
+	if(u32PodZPos > C_FCU__LASERORIENT_MIN_LIFTED_HEIGHT)
+	{
+		sFCU.sStateMachine.sOpStates.u8Lifted = 1U;
+	}
+	else
+	{
+		sFCU.sStateMachine.sOpStates.u8Lifted = 0U;
+	}
+
+	//Determine if Hovering Statically
+	if(sFCU.sHoverengines.eState == HOVERENGINES_STATE__STATIC_HOVERING)
+	{
+		sFCU.sStateMachine.sOpStates.u8StaticHovering = 1U;
+	}
+	else
+	{
+		sFCU.sStateMachine.sOpStates.u8StaticHovering = 0U;
+	}
+
+	// Probably no longer applicable
+	// //Determine if in Gimball Adjusting State 
+	// if()
+	// {
+	// 	sFCU.sStateMachine.sOpStates.u8GimbAdj = 1U;
+	// }
+	// else
+	// {
+	// 	sFCU.sStateMachine.sOpStates.u8GimbAdj = 0U;
+	// }
+
+	//Determine if Ready for Push
+	u32PodSpeed = u32FCU_FLIGHTCTL_NAV__PodSpeed();
+	u32PodZPos = s16FCU_FLIGHTCTL_LASERORIENT__Get_Z_Pos();
+
+	if((u32PodZPos > C_FCU_LASERORIENT_MIN_RUN_MODE_HEIGHT) &&  (u32PodSpeed < C_FCU__NAV_PODSPEED_STANDBY) && 	sFCU.sPusher.sSwitches[0].u8SwitchState = 1U && sFCU.sPusher.sSwitches[1].u8SwitchState = 1U;)
+	{
+		sFCU.sStateMachine.sOpStates.u8ReadyForPush = 1U;
+	}
+	else
+	{
+		sFCU.sStateMachine.sOpStates.u8ReadyForPush = 0U;
+	}
+
+	//Determine if in Pushing State
+	if()
+	{
+		sFCU.sStateMachine.sOpStates.u8Pushing = 1U;
+	}
+	else
+	{
+		sFCU.sStateMachine.sOpStates.u8Pushing = 0U;
+	}
+
+	//Determine if in Coast State
+	if()
+	{
+		sFCU.sStateMachine.sOpStates.u8Coast = 1U;
+	}
+	else
+	{
+		sFCU.sStateMachine.sOpStates.u8Coast = 0U;
+	}
+
+	//Determine if in Braking State
+	if()
+	{
+		sFCU.sStateMachine.sOpStates.u8Braking = 1U;
+	}
+	else
+	{
+		sFCU.sStateMachine.sOpStates.u8Braking = 0U;
+	}
+
+	//Determine if in Controlled Emergency Braking State
+	if()
+	{
+		sFCU.sStateMachine.sOpStates.u8CtlEmergBraking = 1U;
+	}
+	else
+	{
+		sFCU.sStateMachine.sOpStates.u8CtlEmergBraking = 0U;
+	}
+
 }
 
 #endif //#if C_LOCALDEF__LCCM655__ENABLE_THIS_MODULE == 1U
