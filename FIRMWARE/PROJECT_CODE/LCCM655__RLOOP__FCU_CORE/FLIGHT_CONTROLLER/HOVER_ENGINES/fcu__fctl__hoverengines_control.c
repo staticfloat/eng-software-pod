@@ -43,8 +43,8 @@ extern struct _strFCU sFCU;
 #define C_FCU__HE_MIN_CURRENT							(1U)      // hover engine minimum allowed current
 #define C_FCU__HE_MAX_TEMPERATURE						(95U)     // critical hover engine temperature
 /** Pod Dynamics Parameters */
-#define C_FCU__XXXXX_PODSPEED_STANDBY					(5U)      // Pod standby speed
-#define C_FCU__XXXXX_PODSPEED_MAX_SPEED_TO_STABILIZE	(100000U) // max Pod speed to stabilize pod / ATM extra large value so that it's never reached and the hover engines don't throttle down
+#define C_FCU__NAV_PODSPEED_STANDBY					(5U)      // Pod standby speed
+#define C_FCU__NAV_PODSPEED_MAX_SPEED_TO_STABILIZE	(100000U) // max Pod speed to stabilize pod / ATM extra large value so that it's never reached and the hover engines don't throttle down
 
 
 #if C_LOCALDEF__LCCM655__ENABLE_HOVERENGINES_CONTROL == 1U
@@ -102,7 +102,7 @@ typedef enum
 // vFCU_COOLING__Set_Valve(ValveNumber, TimeOn, TimeOff);
 // vFCU_COOLING__Set_Valve(ValveNumber, TimeOn, TimeOff); 
 // vFCU_COOLING__Set_Valve(ValveNumber, TimeOn, TimeOff);
-// u32FCU_FLIGHTCTL_XXXXX__PodSpeed();
+// u32FCU_FLIGHTCTL_NAV__PodSpeed();
 
 void vFCU_FLIGHTCTL_HOVERENGINES__Init(void)
 {
@@ -140,7 +140,7 @@ void vFCU_FLIGHTCTL_HOVERENGINES__Process(void)
 			if((sFCU.sHoverengines.u16HoverenginesCommands == ENABLE_HE) ||
 			   (sFCU.sHoverengines.sIntParams.u8Enable == 1U && sFCU.sHoverengines.sIntParams.u8RunAuto == 1U))
 			{
-				u32PodSpeed = u32FCU_FLIGHTCTL_XXXXX__PodSpeed();
+				u32PodSpeed = u32FCU_FLIGHTCTL_NAV__PodSpeed();
 				if(u32PodSpeed < PODSPEED_STANDBY)
 				{
 					Luint8 u8Counter = 0;
@@ -179,7 +179,7 @@ void vFCU_FLIGHTCTL_HOVERENGINES__Process(void)
 			if((sFCU.sHoverengines.u16HoverenginesCommands == STATIC_HOVERING) ||
 			   (sFCU.sHoverengines.sIntParams.u8Enable == 1U && sFCU.sHoverengines.sIntParams.u8RunAuto == 1U)) //If we are hovering and HEs are enabled and we are in autonomous flight mode 
 			{
-				u32PodSpeed = u32FCU_FLIGHTCTL_XXXXX__PodSpeed(); //read the pod speed
+				u32PodSpeed = u32FCU_FLIGHTCTL_NAV__PodSpeed(); //read the pod speed
 				if(sFCU.sOpStates.u8Lifted && (u32PodSpeed < PODSPEED_STANDBY) && sFCU.sHoverengines.sIntParams.u8TempVar == 0U) // comparison value to be defined
 				{
 					vFCU_COOLING__Set_Valve(1, 0.5, 1.5); // to be changed (this function is not yet implemented
@@ -220,7 +220,7 @@ void vFCU_FLIGHTCTL_HOVERENGINES__Process(void)
 			// it switch state only when the measured RPM reach
 			// the HOVER_ENGINE_STATIC_HOVER_RPM with a certain tollerance
 			Lint16 status = 0;
-			u32PodSpeed = u32FCU_FLIGHTCTL_XXXXX__PodSpeed(); //Uses a function that does not exist
+			u32PodSpeed = u32FCU_FLIGHTCTL_NAV__PodSpeed(); //Uses a function that does not exist
 			if(sFCU.sOpStates.u8Lifted && (u32PodSpeed < PODSPEED_STANDBY) && sFCU.sHoverengines.sIntParams.u8TempVar < 2U) // comparison value to be defined
 			{
 				vFCU_COOLING__Set_Valve(3, 0.5, 1.5); // to be changed (this function is not yet implemented
@@ -282,7 +282,7 @@ void vFCU_FLIGHTCTL_HOVERENGINES__Process(void)
 			// If the pod speed goes lower than the max speed to stabilize pod the HE RPM is increased to hover engine nominal RPM
 			if(sFCU.sHoverengines.sIntParams.u8Enable == 1U) //Manage HE RPM during flight
 			{
-				u32PodSpeed = u32FCU_FLIGHTCTL_XXXXX__PodSpeed();
+				u32PodSpeed = u32FCU_FLIGHTCTL_NAV__PodSpeed();
 				if(u32PodSpeed > PODSPEED_MAX_SPEED_TO_STABILIZE) //PODSPEED_MAX parameter to be defined
 					if(sFCU.sHoverengines.sIntParams.u8SpeedState == 0U)
 					{
@@ -306,7 +306,7 @@ void vFCU_FLIGHTCTL_HOVERENGINES__Process(void)
 			if((sFCU.sHoverengines.u16HoverenginesCommands == RELEASE_STATIC_HOVERING) ||
 		     (sFCU.sHoverengines.sIntParams.u8RunAuto == 0U))
 			{
-				u32PodSpeed = u32FCU_FLIGHTCTL_XXXXX__PodSpeed();
+				u32PodSpeed = u32FCU_FLIGHTCTL_NAV__PodSpeed();
 				if(sFCU.sOpStates.u8StaticHovering && (u32PodSpeed < PODSPEED_STANDBY)) // comparison value to be defined
 				{
 					for(u8Counter = 1; u8Counter < 8; u8Counter++)
@@ -388,49 +388,49 @@ void vFCU_FLIGHTCTL_HOVERENGINES__ManualCommandsHandle(void)
 	switch(sFCU.sHoverengines.u16HoverenginesCommands)
 	{
 		case M_SET_SPEED_HE1:
-			u32PodSpeed = u32FCU_FLIGHTCTL_XXXXX__POD_SPEED();
+			u32PodSpeed = u32FCU_FLIGHTCTL_NAV__POD_SPEED();
 			if(u32PodSpeed < PODSPEED_STANDBY)
 				vFCU_THROTTLE__Set_Throttle(1U, u32GS_RPM, THROTTLE_TYPE__STEP);
 			break;
 
 		case M_SET_SPEED_HE2:
-			u32PodSpeed = u32FCU_FLIGHTCTL_XXXXX__POD_SPEED();
+			u32PodSpeed = u32FCU_FLIGHTCTL_NAV__POD_SPEED();
 			if(u32PodSpeed < PODSPEED_STANDBY)
 				vFCU_THROTTLE__Set_Throttle(2U, u32GS_RPM, THROTTLE_TYPE__STEP);
 			break;
 
 		case M_SET_SPEED_HE3:
-			u32PodSpeed = u32FCU_FLIGHTCTL_XXXXX__POD_SPEED();
+			u32PodSpeed = u32FCU_FLIGHTCTL_NAV__POD_SPEED();
 			if(u32PodSpeed < PODSPEED_STANDBY)
 				vFCU_THROTTLE__Set_Throttle(3U, u32GS_RPM, THROTTLE_TYPE__STEP);
 			break;
 
 		case M_SET_SPEED_HE4:
-			u32PodSpeed = u32FCU_FLIGHTCTL_XXXXX__POD_SPEED();
+			u32PodSpeed = u32FCU_FLIGHTCTL_NAV__POD_SPEED();
 			if(u32PodSpeed < PODSPEED_STANDBY)
 				vFCU_THROTTLE__Set_Throttle(4U, u32GS_RPM, THROTTLE_TYPE__STEP);
 			break;
 
 		case M_SET_SPEED_HE5:
-			u32PodSpeed = u32FCU_FLIGHTCTL_XXXXX__POD_SPEED();
+			u32PodSpeed = u32FCU_FLIGHTCTL_NAV__POD_SPEED();
 			if(u32PodSpeed < PODSPEED_STANDBY)
 				vFCU_THROTTLE__Set_Throttle(5U, u32GS_RPM, THROTTLE_TYPE__STEP);
 			break;
 
 		case M_SET_SPEED_HE6:
-			u32PodSpeed = u32FCU_FLIGHTCTL_XXXXX__POD_SPEED();
+			u32PodSpeed = u32FCU_FLIGHTCTL_NAV__POD_SPEED();
 			if(u32PodSpeed < PODSPEED_STANDBY)
 				vFCU_THROTTLE__Set_Throttle(6U, u32GS_RPM, THROTTLE_TYPE__STEP);
 			break;
 
 		case M_SET_SPEED_HE7:
-			u32PodSpeed = u32FCU_FLIGHTCTL_XXXXX__POD_SPEED();
+			u32PodSpeed = u32FCU_FLIGHTCTL_NAV__POD_SPEED();
 			if(u32PodSpeed < PODSPEED_STANDBY)
 				vFCU_THROTTLE__Set_Throttle(7U, u32GS_RPM, THROTTLE_TYPE__STEP);
 			break;
 
 		case M_SET_SPEED_HE8:
-			u32PodSpeed = u32FCU_FLIGHTCTL_XXXXX__POD_SPEED();
+			u32PodSpeed = u32FCU_FLIGHTCTL_NAV__POD_SPEED();
 			if(u32PodSpeed < PODSPEED_STANDBY)
 				vFCU_THROTTLE__Set_Throttle(8U, u32GS_RPM, THROTTLE_TYPE__STEP);
 			break;
