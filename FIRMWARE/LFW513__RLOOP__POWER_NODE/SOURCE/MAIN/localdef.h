@@ -66,7 +66,7 @@ SAFETY UDP LAYER
 		#define C_LOCALDEF__LCCM528__RX_CALLBACK(p,l,t,d,f)					vPWRNODE_NET_RX__RxSafeUDP(p,l,t,d,f)
 
 		/** The one and only UDP port we can operate on */
-		#define C_LOCALDEF__LCCM528__ETHERNET_PORT_NUMBER					(9900U)
+		#define C_LOCALDEF__LCCM528__ETHERNET_PORT_NUMBER					(9110U)
 		#define C_LOCALDEF__LCCM528__ETHERNET_PORT_NUMBER2					(0U)
 
 		/** Vision over SafeUDP Options */
@@ -117,7 +117,9 @@ ATA6870N - BATTERY MANAGEMENT DEVICE
 		/** Use checksum support on the ATA comms or not? */
 		#define C_LOCALDEF__LCCM650__ENABLE_CRC								(0U)
 
-		
+		/** Average window, set to 0 for averaging off */
+		#define C_LOCALDEF__LCCM650__AVERAGE_WINDOW							(16U)
+
 		//setup for functions
 		#define M_LOCALDEF__LCCM650__NCS_TRIS(dir)							{if(dir == 0U) vRM4_GIO__Set_BitDirection(RM4_GIO__PORT_B, 4U, GIO_DIRECTION__OUTPUT); else vRM4_GIO__Set_BitDirection(RM4_GIO__PORT_B, 4U, GIO_DIRECTION__INPUT);}
 		#define M_LOCALDEF__LCCM650__NCS_LATCH(val)							{vRM4_GIO__Set_Bit(RM4_GIO__PORT_B, 4U, val);}
@@ -224,7 +226,7 @@ DS18B20 - 1-Wire Temperature Sensor
 		#define C_LOCALDEF__LCCM644__CONNECT_LCCM641						(1U)
 
 		//max supported devices
-		#define C_LOCALDEF__LCCM644__MAX_DEVICES							(250U)
+		#define C_LOCALDEF__LCCM644__MAX_DEVICES							(600U)
 
 		/** Define the number of I2C channels available in the system
 		 * If using the DS2482 we can support 4 devices on the one I2C bus
@@ -274,19 +276,22 @@ RLOOP - POWER NODE CORE
 		#define C_LOCALDEF__LCCM653__ENABLE_PI_COMMS						(0U)
 
 		/** Enable the battery temperature measurement system */
-		#define C_LOCALDEF__LCCM653__ENABLE_BATT_TEMP						(0U)
+		#define C_LOCALDEF__LCCM653__ENABLE_BATT_TEMP						(1U)
+
+		/** Enable or disable battery temp search */
+		#define C_LOCALDEF__LCCM653__ENABLE_BATT_TEMP_SEARCH				(0U)
 
 		/** Enable the BMS Subsystem */
-		#define C_LOCALDEF__LCCM653__ENABLE_BMS								(0U)
+		#define C_LOCALDEF__LCCM653__ENABLE_BMS								(1U)
 
 		/** Enable the PV temp system using TSYS01 */
-		#define C_LOCALDEF__LCCM653__ENABLE_NODE_TEMP						(0U)
+		#define C_LOCALDEF__LCCM653__ENABLE_NODE_TEMP						(1U)
 
 		/** Node pressure using MS5607 */
-		#define C_LOCALDEF__LCCM653__ENABLE_NODE_PRESS						(0U)
+		#define C_LOCALDEF__LCCM653__ENABLE_NODE_PRESS						(1U)
 
 		/** Enable the DC/DC converter subsystem */
-		#define C_LOCALDEF__LCCM653__ENABLE_DC_CONVERTER					(0U)
+		#define C_LOCALDEF__LCCM653__ENABLE_DC_CONVERTER					(1U)
 		//when the DC/DC is enabled we can implement a timeout timer from
 		//heartbeat (or any GS comms)
 		#define C_LOCALDEF__LCCM653__ENABLE_DC_CONVERTER__HEART_TIMEOUT		(0U)
@@ -299,6 +304,9 @@ RLOOP - POWER NODE CORE
 
 		/** Enable Ethernet */
 		#define C_LOCALDEF__LCCM653__ENABLE_ETHERNET						(1U)
+
+		/** Enable Pressure Vesel Repress System */
+		#define C_LOCALDEF__LCCM653__ENABLE_PV_REPRESS						(1U)
 
 		/** Testing Options */
 		#define C_LOCALDEF__LCCM653__ENABLE_TEST_SPEC						(0U)

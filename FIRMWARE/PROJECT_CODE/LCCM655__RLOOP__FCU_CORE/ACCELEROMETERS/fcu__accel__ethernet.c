@@ -22,6 +22,8 @@
 #if C_LOCALDEF__LCCM655__ENABLE_ACCEL == 1U
 #if C_LOCALDEF__LCCM655__ENABLE_ETHERNET == 1U
 
+extern struct _strFCU sFCU;
+
 /***************************************************************************//**
  * @brief
  * Init the eth portion
@@ -39,7 +41,7 @@ void vFCU_ACCEL_ETH__Init(void)
  * Transmit acceleration data over ethernet
  *
  * @param[in]		u16PacketType			The type of packet to transmit
- * @st_funcMD5		046162A3C842B5C1A2E1B398C25E8C1C
+ * @st_funcMD5		6C25F3B173E5EE8B1B698CC5BA7F2515
  * @st_funcID		LCCM655R0.FILE.030.FUNC.001
  */
 void vFCU_ACCEL_ETH__Transmit(E_NET__PACKET_T ePacketType)
@@ -57,7 +59,7 @@ void vFCU_ACCEL_ETH__Transmit(E_NET__PACKET_T ePacketType)
 	switch(ePacketType)
 	{
 		case NET_PKT__FCU_ACCEL__TX_FULL_DATA:
-			u16Length = C_FCU__NUM_ACCEL_CHIPS * 30U;
+			u16Length = C_FCU__NUM_ACCEL_CHIPS * 50U;
 			break;
 
 		case NET_PKT__FCU_ACCEL__TX_CAL_DATA:
@@ -98,27 +100,59 @@ void vFCU_ACCEL_ETH__Transmit(E_NET__PACKET_T ePacketType)
 					vNUMERICAL_CONVERT__Array_S16(pu8Buffer, s16MMA8451_FILTERING__Get_Average(u8Device, MMA8451_AXIS__Z));
 					pu8Buffer += 2U;
 
-					//X Accel
-					vNUMERICAL_CONVERT__Array_F32(pu8Buffer, f32MMA8451_MATH__Get_GForce(u8Device, MMA8451_AXIS__X));
+
+					#if C_LOCALDEF__LCCM418__ENABLE_G_FORCE == 1U
+						//X Accel
+						vNUMERICAL_CONVERT__Array_F32(pu8Buffer, f32MMA8451_MATH__Get_GForce(u8Device, MMA8451_AXIS__X));
+						pu8Buffer += 4U;
+
+						//Y Accel
+						vNUMERICAL_CONVERT__Array_F32(pu8Buffer, f32MMA8451_MATH__Get_GForce(u8Device, MMA8451_AXIS__Y));
+						pu8Buffer += 4U;
+
+						//Z Accel
+						vNUMERICAL_CONVERT__Array_F32(pu8Buffer, f32MMA8451_MATH__Get_GForce(u8Device, MMA8451_AXIS__Z));
+						pu8Buffer += 4U;
+
+						//Pitch
+						vNUMERICAL_CONVERT__Array_F32(pu8Buffer, f32MMA8451_MATH__Get_PitchAngle(u8Device));
+						pu8Buffer += 4U;
+
+						//Roll
+						vNUMERICAL_CONVERT__Array_F32(pu8Buffer, f32MMA8451_MATH__Get_RollAngle(u8Device));
+						pu8Buffer += 4U;
+					#else
+						vNUMERICAL_CONVERT__Array_F32(pu8Buffer, 0.0F);
+						pu8Buffer += 4U;
+						vNUMERICAL_CONVERT__Array_F32(pu8Buffer, 0.0F);
+						pu8Buffer += 4U;
+						vNUMERICAL_CONVERT__Array_F32(pu8Buffer, 0.0F);
+						pu8Buffer += 4U;
+						vNUMERICAL_CONVERT__Array_F32(pu8Buffer, 0.0F);
+						pu8Buffer += 4U;
+						vNUMERICAL_CONVERT__Array_F32(pu8Buffer, 0.0F);
+						pu8Buffer += 4U;
+					#endif
+
+					//FCU computed specifics
+					vNUMERICAL_CONVERT__Array_S32(pu8Buffer, sFCU.sAccel.sChannels[u8Device].s32CurrentAccel_mmss);
 					pu8Buffer += 4U;
 
-					//Y Accel
-					vNUMERICAL_CONVERT__Array_F32(pu8Buffer, f32MMA8451_MATH__Get_GForce(u8Device, MMA8451_AXIS__Y));
+					vNUMERICAL_CONVERT__Array_S32(pu8Buffer, sFCU.sAccel.sChannels[u8Device].s32CurrentVeloc_mms);
 					pu8Buffer += 4U;
 
-					//Z Accel
-					vNUMERICAL_CONVERT__Array_F32(pu8Buffer, f32MMA8451_MATH__Get_GForce(u8Device, MMA8451_AXIS__Z));
+					vNUMERICAL_CONVERT__Array_S32(pu8Buffer, sFCU.sAccel.sChannels[u8Device].s32PrevVeloc_mms);
 					pu8Buffer += 4U;
 
-					//Pitch
-					vNUMERICAL_CONVERT__Array_F32(pu8Buffer, f32MMA8451_MATH__Get_PitchAngle(u8Device));
+					vNUMERICAL_CONVERT__Array_S32(pu8Buffer, sFCU.sAccel.sChannels[u8Device].s32CurrentDisplacement_mm);
 					pu8Buffer += 4U;
 
-					//Roll
-					vNUMERICAL_CONVERT__Array_F32(pu8Buffer, f32MMA8451_MATH__Get_RollAngle(u8Device));
+					vNUMERICAL_CONVERT__Array_S32(pu8Buffer, sFCU.sAccel.sChannels[u8Device].s32PrevDisplacement_mm);
 					pu8Buffer += 4U;
 
-				}//for(u8Device = 0; u8Device < 3; u8Device++)
+
+
+				}//for(u8Device = 0U; u8Device < C_FCU__NUM_ACCEL_CHIPS; u8Device++)
 				break;
 
 			case NET_PKT__FCU_ACCEL__TX_CAL_DATA:

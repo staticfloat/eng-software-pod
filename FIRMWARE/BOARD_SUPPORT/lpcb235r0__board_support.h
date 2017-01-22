@@ -1054,6 +1054,9 @@ EEPROM BASIC PARAMETERS
 		#define C_LOCALDEF__LCCM188__DISABLE__F32							(0U)
 		#define C_LOCALDEF__LCCM188__DISABLE__MAC							(0U)
 
+		/** Specialised enabled */
+		#define C_LOCALDEF__LCCM188__ENABLE_VECTORS							(1U)
+
 		/** Testing options */
 		#define C_LOCALDEF__LCCM188__ENABLE_TEST_SPEC						(0U)
 
@@ -1238,7 +1241,11 @@ MMA8451 - 3 AXIS ACCELEROMETER
 		#define C_LOCALDEF__LCCM418__DELAY_US(x)							vRM4_DELAYS__Delay_uS(x)
 
 		/** The max number of process loops without seeing an interrupt before we raise a flag. */
+#ifndef WIN32
 		#define C_LOCALDEF__LCCM418__MAX_INTERRUPT_LOST_COUNT				(2000000U)
+#else
+		#define C_LOCALDEF__LCCM418__MAX_INTERRUPT_LOST_COUNT				(200000000U)
+#endif
 
 		/** set to 1 to use interrupts, not polling method */
 		#define C_LOCALDEF__LCCM418__USE_INTERRUPT_DEV0						(1U)
@@ -1263,7 +1270,7 @@ MMA8451 - 3 AXIS ACCELEROMETER
 
 		//enable rate of change calculations
 		#define C_LOCALDEF__LCCM418__ENABLE_ROC								(0U)
-		#define C_LOCALDEF__LCCM418__ENABLE_G_FORCE							(1U)
+		#define C_LOCALDEF__LCCM418__ENABLE_G_FORCE							(0U)
 
 		//the number of samples for the averaging
 		#define C_LOCALDEF__LCCM418__USER_AVERAGE_MAX_SAMPLES				(0U)

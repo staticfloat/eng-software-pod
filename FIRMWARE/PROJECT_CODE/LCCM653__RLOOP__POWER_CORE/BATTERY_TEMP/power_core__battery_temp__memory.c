@@ -24,8 +24,7 @@
 
 extern struct _strPWRNODE sPWRNODE;
 
-//locals
-Lint16 s16PWRNODE_BATTEMP_MEM__Load(void);
+
 
 //the default battery packs
 extern const Luint8 u8FwdPack__Default[];
@@ -34,7 +33,7 @@ extern const Luint8 u8FwdPack__Default[];
  * @brief
  * Init the memory system. Check the CRC's and load the pack data if needed.
  * 
- * @st_funcMD5		ECC33E2FE28D9D2779F71DF0AE2468D8
+ * @st_funcMD5		C7CA8EDC3B6B18471A4DDFF2BEBCFF18
  * @st_funcID		LCCM653R0.FILE.029.FUNC.001
  */
 void vPWRNODE_BATTTEMP_MEM__Init(void)
@@ -63,7 +62,7 @@ void vPWRNODE_BATTTEMP_MEM__Init(void)
 
 		//default the data
 		vEEPARAM__WriteU16(	C_POWERCORE__EEPARAM_INDEX__BATTTEMP__NUM_SENSORS,
-							(C_PWRCORE__NUM_TEMP_SNSR_PER_6P * C_PWRCORE__NUM_6P_MODULES),
+							((C_PWRCORE__NUM_TEMP_SNSR_PER_6P * C_PWRCORE__NUM_6P_MODULES) + 3U),
 							1U);
 		//reload it
 		sPWRNODE.sTemp.u16NumSensors = u16EEPARAM__Read(C_POWERCORE__EEPARAM_INDEX__BATTTEMP__NUM_SENSORS);
@@ -78,8 +77,7 @@ void vPWRNODE_BATTTEMP_MEM__Init(void)
 
 	}
 
-	//now load the memory
-	s16Return = s16PWRNODE_BATTEMP_MEM__Load();
+
 
 	//todo, check it loaded well and verify some sensors.
 

@@ -76,6 +76,16 @@
         Private m_pnlFlight__Throttle As SIL3.rLoop.rPodControl.Panels.FlightControl.Throttle
 
         ''' <summary>
+        ''' Pusher interface
+        ''' </summary>
+        Private m_pnlFlight__Pusher As SIL3.rLoop.rPodControl.Panels.FlightControl.Pusher
+
+		Private m_pnlFlight__TrackDB_Create As SIL3.rLoop.rPodControl.Panels.FlightControl.TrackDatabase.Creator
+		Private m_pnlFlight__TrackDB_Monitor As SIL3.rLoop.rPodControl.Panels.FlightControl.TrackDatabase.Monitor
+
+        Private m_pnlFlight__Geometry As SIL3.rLoop.rPodControl.Panels.FlightControl.Geometry
+
+        ''' <summary>
         ''' The logging directory
         ''' </summary>
         Private m_sLogDir As String
@@ -135,9 +145,13 @@
             Me.m_pExplorer.SubItem__Add_LinkItem(Me.m_iBarIndex, "Lasers - Distance")
             Me.m_pExplorer.SubItem__Add_LinkItem(Me.m_iBarIndex, "Throttle")
             Me.m_pExplorer.SubItem__Add_LinkItem(Me.m_iBarIndex, "Pusher")
+            Me.m_pExplorer.SubItem__Add_LinkItem(Me.m_iBarIndex, "Geometry")
 
 
-
+            Me.m_iBarIndex = Me.m_pExplorer.Bar__Add("Flight - Track DB")
+            Me.m_pExplorer.SubItem__Add_LinkItem(Me.m_iBarIndex, "TrackDB - Create")
+            Me.m_pExplorer.SubItem__Add_LinkItem(Me.m_iBarIndex, "TrackDB - Monitor")
+			
             'add the panels before the bar so as we have docking working well.
             Me.m_pnlFlight__Mission = New SIL3.rLoop.rPodControl.Panels.FlightControl.Mission("Mission", Me.m_sLogDir)
             pf.Controls.Add(Me.m_pnlFlight__Mission)
@@ -148,7 +162,7 @@
             Me.m_pnlFlight__FaultFlags = New SIL3.rLoop.rPodControl.Panels.FlightControl.Faults("Fault Flags", Me.m_sLogDir)
             pf.Controls.Add(Me.m_pnlFlight__FaultFlags)
 
-            Me.m_pnlFlight__Accel = New SIL3.rLoop.rPodControl.Panels.FlightControl.Accelerometers("Accelerometers")
+            Me.m_pnlFlight__Accel = New SIL3.rLoop.rPodControl.Panels.FlightControl.Accelerometers("Accelerometers", Me.m_sLogDir)
             pf.Controls.Add(Me.m_pnlFlight__Accel)
 
             Me.m_pnlFlight__ASI = New SIL3.rLoop.rPodControl.Panels.FlightControl.ASI("ASI Controllers", Me.m_sLogDir)
@@ -173,6 +187,17 @@
             Me.m_pnlFlight__Throttle = New SIL3.rLoop.rPodControl.Panels.FlightControl.Throttle("Throttle", Me.m_sLogDir)
             pf.Controls.Add(Me.m_pnlFlight__Throttle)
 
+            Me.m_pnlFlight__Pusher = New SIL3.rLoop.rPodControl.Panels.FlightControl.Pusher("Pusher", Me.m_sLogDir)
+            pf.Controls.Add(Me.m_pnlFlight__Pusher)
+            Me.m_pnlFlight__Geometry = New SIL3.rLoop.rPodControl.Panels.FlightControl.Geometry("Geometry", Me.m_sLogDir)
+            pf.Controls.Add(Me.m_pnlFlight__Geometry)
+
+
+            Me.m_pnlFlight__TrackDB_Create = new SIL3.rLoop.rPodControl.Panels.FlightControl.TrackDatabase.Creator("TrackDB - Create", Me.m_sLogDir)
+            pf.Controls.Add(Me.m_pnlFlight__TrackDB_Create)	
+			me.m_pnlFlight__TrackDB_Monitor = new SIL3.rLoop.rPodControl.Panels.FlightControl.TrackDatabase.Monitor("TrackDB - Monitor", Me.m_sLogDir)
+            pf.Controls.Add(Me.m_pnlFlight__TrackDB_Monitor)	
+			
             'setup the eth
             AddHandler Me.m_pnlFlight__Mission.UserEvent__SafeUDP__Tx_X4, AddressOf Me.InternalEvent__SafeUDP__Tx_X4
             AddHandler Me.m_pnlFlight__SpaceX.UserEvent__SafeUDP__Tx_X4, AddressOf Me.InternalEvent__SafeUDP__Tx_X4
@@ -185,7 +210,13 @@
             AddHandler Me.m_pnlFlight__Brakes.UserEvent__SafeUDP__Tx_X4, AddressOf Me.InternalEvent__SafeUDP__Tx_X4
             AddHandler Me.m_pnlFlight__Stepper.UserEvent__SafeUDP__Tx_X4, AddressOf Me.InternalEvent__SafeUDP__Tx_X4
             AddHandler Me.m_pnlFlight__Throttle.UserEvent__SafeUDP__Tx_X4, AddressOf Me.InternalEvent__SafeUDP__Tx_X4
+            AddHandler Me.m_pnlFlight__Pusher.UserEvent__SafeUDP__Tx_X4, AddressOf Me.InternalEvent__SafeUDP__Tx_X4
+            AddHandler Me.m_pnlFlight__Geometry.UserEvent__SafeUDP__Tx_X4, AddressOf Me.InternalEvent__SafeUDP__Tx_X4
 
+
+            AddHandler Me.m_pnlFlight__TrackDB_Create.UserEvent__SafeUDP__Tx_X4, AddressOf Me.InternalEvent__SafeUDP__Tx_X4
+            AddHandler Me.m_pnlFlight__TrackDB_Monitor.UserEvent__SafeUDP__Tx_X4, AddressOf Me.InternalEvent__SafeUDP__Tx_X4
+	
             AddHandler Me.m_pExplorer.LinkClick, AddressOf Me.LinkBar_LinkClick
 
         End Sub
@@ -210,7 +241,12 @@
             Me.m_pnlFlight__Brakes.Panel__HideShow(sText)
             Me.m_pnlFlight__Stepper.Panel__HideShow(sText)
             Me.m_pnlFlight__Throttle.Panel__HideShow(sText)
-        End Sub
+            Me.m_pnlFlight__Pusher.Panel__HideShow(sText)
+            Me.m_pnlFlight__Geometry.Panel__HideShow(sText)
+
+            Me.m_pnlFlight__TrackDB_Create.Panel__HideShow(sText)
+			me.m_pnlFlight__TrackDB_Monitor.Panel__HideShow(sText)
+			End Sub
 #End Region '#Region "PANEL HELPERS"
 
 #Region "EXPLORER BAR"
@@ -231,7 +267,12 @@
             Me.m_pnlFlight__Brakes.Panel__HideShow(sText)
             Me.m_pnlFlight__Stepper.Panel__HideShow(sText)
             Me.m_pnlFlight__Throttle.Panel__HideShow(sText)
-        End Sub
+            Me.m_pnlFlight__Pusher.Panel__HideShow(sText)
+            Me.m_pnlFlight__Geometry.Panel__HideShow(sText)
+
+            Me.m_pnlFlight__TrackDB_Create.Panel__HideShow(sText)
+			me.m_pnlFlight__TrackDB_Monitor.Panel__HideShow(sText)
+			End Sub
 #End Region '#Region "EXPLORER BAR"
 
 #Region "ETHERNET TX"
@@ -275,6 +316,8 @@
             Me.m_pnlFlight__Brakes.InernalEvent__UDPSafe__RxPacketB(u16PacketType, u16PayloadLength, u8Payload, u16CRC)
             Me.m_pnlFlight__Stepper.InernalEvent__UDPSafe__RxPacketB(u16PacketType, u16PayloadLength, u8Payload, u16CRC)
             Me.m_pnlFlight__Throttle.InernalEvent__UDPSafe__RxPacketB(u16PacketType, u16PayloadLength, u8Payload, u16CRC)
+            Me.m_pnlFlight__Pusher.InernalEvent__UDPSafe__RxPacketB(u16PacketType, u16PayloadLength, u8Payload, u16CRC)
+            Me.m_pnlFlight__Geometry.InernalEvent__UDPSafe__RxPacketB(u16PacketType, u16PayloadLength, u8Payload, u16CRC)
         End Sub
 
         ''' <summary>

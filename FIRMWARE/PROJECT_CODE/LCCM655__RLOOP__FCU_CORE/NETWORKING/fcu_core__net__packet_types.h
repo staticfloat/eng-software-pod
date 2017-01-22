@@ -161,11 +161,30 @@
 
 
 		//////////////////////////////////////////////////////
-		//FCU: NAVIGATION (0x1600)
+		//FCU: FLIGHT (0x1600)
 		//////////////////////////////////////////////////////
 
 		/** Stream Navigation Progress Data */
 		NET_PKT__FCU_NAV__TX_NAV_PROGRESS = 0x1600U,
+
+		/** Host to send the FCU a track database packet */
+		NET_PKT__FCU_FLT__TX_TRACK_DB_CHUNK = 0x1601U,
+
+		/** FCU to ACK track DB chunk upload */
+		NET_PKT__FCU_FLT__ACK_TRACK_DB_CHUNK = 0x1602U,
+
+		/** Select track database */
+		NET_PKT__FCU_FLT__SELECT_TRACK_DB = 0x1603U,
+
+		/** Request the geometry data */
+		NET_PKT__FCU_FLT__REQUEST_GEOM_DATA = 0x1604U,
+
+		/** FCU to host to tx geom data */
+		NET_PKT__FCU_FLT__TX_GEOM_DATA = 0x1605U,
+
+		/** Host to set a GEOM parameter */
+		NET_PKT__FCU_FLT__SET_GEOM_DATA = 0x1606U,
+
 
 		//////////////////////////////////////////////////////
 		//FCU: ASI LAYER (0x1700)
@@ -176,6 +195,17 @@
 
 		/** FCU to Host, return ASI data */
 		NET_PKT__FCU_ASI__TX_ASI_DATA = 0x1701U,
+
+		//////////////////////////////////////////////////////
+		//FCU: PUSHER (0x1800)
+		//////////////////////////////////////////////////////
+
+		/** Request from the host to send the pusher data */
+		NET_PKT__FCU_ASI__REQUEST_PUSHER_DATA = 0x1800U,
+
+		/** FCU to Host, return pusher data */
+		NET_PKT__FCU_ASI__TX_PUSHER_DATA = 0x1801U,
+
 
 		//////////////////////////////////////////////////////
 		//POWER: GENERAL (0x3000)
@@ -190,6 +220,14 @@
 		/** Power Node data streaming */
 		NET_PKT__PWR_GEN__STREAMING_CONTROL = 0x3010U,
 
+		/** Charger Control */
+		NET_PKT__PWR_GEN__CHARGER_CONTROL = 0x3020U,
+
+		/** Manually Balance */
+		NET_PKT__PWR_GEN__MANUAL_BALANCE_CONTROL = 0x3021U,
+
+		/** Latch */
+		NET_PKT__PWR_GEN__LATCH = 0x3030U,
 
 		//////////////////////////////////////////////////////
 		//POWER: TEMPERATURE SYSTEM (0x3200)
@@ -219,6 +257,18 @@
 		/** Set the User Data by Sensor Index*/
 		NET_PKT__PWR_TEMP__SET_USERDATA_INDEX = 0x3207U,
 
+
+		//////////////////////////////////////////////////////
+		//POWER: BMS SYSTEM (0x3400)
+		//////////////////////////////////////////////////////
+		/** Request a BMS packet */
+		NET_PKT__PWR_BMS__REQ_BMS = 0x3400U,
+
+		/** Send BMS status */
+		NET_PKT__PWR_BMS__TX_BMS_STATUS = 0x3401U,
+
+		/** Setup the charger values */
+		NET_PKT__PWR_BMS__SET_CHG_VALUES = 0x3402U,
 
 		//////////////////////////////////////////////////////
 		//DAQ (0x4000)

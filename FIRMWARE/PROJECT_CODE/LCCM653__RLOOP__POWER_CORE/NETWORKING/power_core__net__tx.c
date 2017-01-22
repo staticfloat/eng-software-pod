@@ -44,7 +44,7 @@ void vPWRNODE_NET_TX__Init(void)
  * @brief
  * Process network transmission and do any transmission as required.
  * 
- * @st_funcMD5		69DBCDEBCC2CE7BC7D9952B4C7F79FD3
+ * @st_funcMD5		C8F5AD7CFC44AD1FF97722827F69FE08
  * @st_funcID		LCCM653R0.FILE.019.FUNC.002
  */
 void vPWRNODE_NET_TX__Process(void)
@@ -105,6 +105,13 @@ void vPWRNODE_NET_TX__Process(void)
 				vPWRNODE_BAATTEMP_ETH__Transmit_ROMID(sPWRNODE.sUDPDiag.u32Block0);
 			#endif
 
+			sPWRNODE.sUDPDiag.eTxPacketType = NET_PKT__NONE;
+			break;
+
+		case NET_PKT__PWR_BMS__TX_BMS_STATUS:
+			#if C_LOCALDEF__LCCM653__ENABLE_BMS == 1U
+				vPWR_BMS_ETH__Transmit(eType);
+			#endif
 			sPWRNODE.sUDPDiag.eTxPacketType = NET_PKT__NONE;
 			break;
 

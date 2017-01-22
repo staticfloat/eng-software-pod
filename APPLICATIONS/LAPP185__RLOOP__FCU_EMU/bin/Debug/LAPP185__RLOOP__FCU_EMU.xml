@@ -2502,7 +2502,7 @@ gets a list of directories from a parth, but does not put the path name in the s
  <returns>ArrayList</returns>
  <remarks></remarks>
 </member>
-<member name="M:LAPP185__RLOOP__FCU_EMU.SIL3.FileSupport.FileHelpers.saGetFileList(System.String)">
+<member name="M:LAPP185__RLOOP__FCU_EMU.SIL3.FileSupport.FileHelpers.Folder__GetFileList(System.String)">
  <summary>
  Returns a string array of files on a path.
  </summary>
@@ -4463,6 +4463,62 @@ this function has been tested for use with An Autodesk Inventor AddIN Server
  <param name="sText"></param>
  <remarks></remarks>
 </member>
+<member name="T:LAPP185__RLOOP__FCU_EMU.SIL3.ApplicationSupport.TextBoxHelper_S32">
+ <summary>
+ S32 based helper
+ </summary>
+</member>
+<member name="M:LAPP185__RLOOP__FCU_EMU.SIL3.ApplicationSupport.TextBoxHelper_S32.#ctor(System.Int32)">
+ <summary>
+ Create a new text box and pass in the width
+ </summary>
+ <param name="iWidth"></param>
+ <remarks></remarks>
+</member>
+<member name="M:LAPP185__RLOOP__FCU_EMU.SIL3.ApplicationSupport.TextBoxHelper_S32.#ctor(System.Int32,System.Windows.Forms.Control,System.String,System.String)">
+ <summary>
+ We can opt to layout below a control if we want to.
+ </summary>
+ <param name="iWidth"></param>
+ <param name="pBelowControl"></param>
+ <remarks></remarks>
+</member>
+<member name="M:LAPP185__RLOOP__FCU_EMU.SIL3.ApplicationSupport.TextBoxHelper_S32.#ctor(System.Int32,System.Int32,System.Boolean)">
+ <summary>
+ Create a new text box and pass in the width
+ If you also pass in the height then we use multiline mode
+ </summary>
+ <param name="iWidth"></param>
+ <remarks></remarks>
+</member>
+<member name="T:LAPP185__RLOOP__FCU_EMU.SIL3.ApplicationSupport.TextBoxHelper_S16">
+ <summary>
+ S16 based helper
+ </summary>
+</member>
+<member name="M:LAPP185__RLOOP__FCU_EMU.SIL3.ApplicationSupport.TextBoxHelper_S16.#ctor(System.Int32)">
+ <summary>
+ Create a new text box and pass in the width
+ </summary>
+ <param name="iWidth"></param>
+ <remarks></remarks>
+</member>
+<member name="M:LAPP185__RLOOP__FCU_EMU.SIL3.ApplicationSupport.TextBoxHelper_S16.#ctor(System.Int32,System.Windows.Forms.Control,System.String,System.String)">
+ <summary>
+ We can opt to layout below a control if we want to.
+ </summary>
+ <param name="iWidth"></param>
+ <param name="pBelowControl"></param>
+ <remarks></remarks>
+</member>
+<member name="M:LAPP185__RLOOP__FCU_EMU.SIL3.ApplicationSupport.TextBoxHelper_S16.#ctor(System.Int32,System.Int32,System.Boolean)">
+ <summary>
+ Create a new text box and pass in the width
+ If you also pass in the height then we use multiline mode
+ </summary>
+ <param name="iWidth"></param>
+ <remarks></remarks>
+</member>
 <member name="T:LAPP185__RLOOP__FCU_EMU.SIL3.ApplicationSupport.TextBoxHelper_StateDisplay">
  <summary>
  An extension of the text box to display states based on a input variable
@@ -5927,6 +5983,11 @@ adds a sub level node after one has already been added
  </summary>
  <param name="u8Array"></param>
  <param name="iLength"></param>
+</member>
+<member name="T:LAPP185__RLOOP__FCU_EMU.CM30Laser">
+ <summary>
+ Just a Fake CM30 laser
+ </summary>
 </member>
 <member name="T:LAPP185__RLOOP__FCU_EMU.ASIController">
  <summary>

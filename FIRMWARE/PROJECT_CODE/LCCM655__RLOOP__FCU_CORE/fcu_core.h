@@ -28,6 +28,7 @@
 
 		#include <LCCM655__RLOOP__FCU_CORE/ASI_RS485/fcu__asi_defines.h>
 		#include <LCCM655__RLOOP__FCU_CORE/ASI_RS485/fcu__asi_types.h>
+		#include <LCCM655__RLOOP__FCU_CORE/LGU_COMMS/fcu__lgu_comms__types.h>
 
 		#include <LCCM655__RLOOP__FCU_CORE/NETWORKING/fcu_core__net__packet_types.h>
 
@@ -266,8 +267,32 @@
 					/** most recent recorded sample from the Accel in raw units */
 					Lint16 s16LastSample[MMA8451_AXIS__MAX];
 
-					/** Last sample of the G-Force*/
-					Lfloat32 f32LastG[MMA8451_AXIS__MAX];
+					/** do some filtering on our target axis */
+					Luint16 u16FilterCounter;
+					Lint16 s16FilterValues[C_FCU__ACCEL_FILTER_WINDOW];
+					Lint16 s16FilteredResult;
+
+					#if C_LOCALDEF__LCCM418__ENABLE_G_FORCE == 1U
+						/** Last sample of the G-Force*/
+						Lfloat32 f32LastG[MMA8451_AXIS__MAX];
+					#endif
+
+					/** The current acceleration in mm/sec^2 based on the last sample */
+					Lint32 s32CurrentAccel_mmss;
+
+					/** The computed current velocity in mm/sec*/
+					Lint32 s32CurrentVeloc_mms;
+
+					/** The previous veloc has just been calculated in the last time period */
+					Lint32 s32PrevVeloc_mms;
+
+					/** Current displacement */
+					Luint32 s32CurrentDisplacement_mm;
+
+					/** Previous displacement */
+					Luint32 s32PrevDisplacement_mm;
+
+
 
 				}sChannels[C_LOCALDEF__LCCM418__NUM_DEVICES];
 
@@ -497,6 +522,34 @@
 					Luint8 u8Dummy;
 				#endif
 
+
+				#if C_LOCALDEF__LCCM655__ENABLE_TRACK_DB == 1U
+				/** Track database structure */
+				struct
+				{
+					/** Track DB fault flags system */
+					FAULT_TREE__PUBLIC_T sFaultFlags;
+
+					/** The current selected track DB, defaults to 0 and user
+					 * must set from GS
+					 */
+					Luint32 u32CurrentDB;
+
+				}sTrackDB;
+				#endif //#if C_LOCALDEF__LCCM655__ENABLE_TRACK_DB == 1U
+
+				/** Geometry */
+				struct
+				{
+					/** F32 Geom Items */
+					struct tsNUM_f32Vector_3D vf32Geom[C_FCU__GEOM__NUM_ITEMS_F32];
+
+					/** S32 Geom Items */
+					struct tsNUM_s32Vector_3D vs32Geom[C_FCU__GEOM__NUM_ITEMS_S32];
+
+				}sGeom;
+
+
 			}sFlightControl;
 
 
@@ -693,9 +746,6 @@
 			}sASI;
 			#endif
 
-			/** Structure guard 2*/
-			Luint32 u32Guard2;
-			
 			/** Input data for throttle layer */
 			#if C_LOCALDEF__LCCM655__ENABLE_THROTTLE == 1U
 			struct strThrottleInterfaceData
@@ -737,6 +787,64 @@
 			} sThrottle;
 			#endif //C_LOCALDEF__LCCM655__ENABLE_THROTTLE
 
+
+			#if C_LOCALDEF__LCCM655__LGU_COMMS_SYSTEM == 1U
+			struct
+			{
+				/** The communication state between FCU and LGU*/
+				E_LGU_COMMS_STATE_T eCommsState;
+
+
+				/** The tx and rx messages */
+				struct
+				{
+
+					/** Header byte = 0x55*/
+					Luint8 u8Header;
+
+					/** The command type */
+					union
+					{
+						Luint16 u16;
+						Luint8 u8[2];
+					}unCommand;
+
+					/** 32bit value */
+					union
+					{
+						Luint32 u32;
+						Lint32 s32;
+						Lfloat32 f32;
+						Luint8 u8[4];
+					}unValue;
+
+					/** The CRC */
+					Luint8 u8CRC;
+
+					/** 0xAA */
+					Luint8 u8Footer;
+
+				}sTxMessage, sRxMessage;
+
+				/** Is a Tx In progress */
+				Luint8 u8TxRequest;
+
+				/** The count of transmission bytes */
+				Luint8 u8TxCounter;
+
+				/** Count of Rx Bytes */
+				Luint8 u8RxCounter;
+
+				/** New Rx packet avail */
+				Luint8 u8RxAvail;
+
+			}sLGU;
+			#endif //C_LOCALDEF__LCCM655__LGU_COMMS_SYSTEM
+
+			/** Structure guard 2*/
+			Luint32 u32Guard2;
+
+
 		};
 
 		/*******************************************************************************
@@ -749,9 +857,52 @@
 		DLL_DECLARATION void vFCU__RTI_10MS_ISR(void);
 
 
-		//main state machine
-		void vFCU_FCTL_MAINSM__Init(void);
-		void vFCU_FCTL_MAINSM__Process(void);
+		//flight controller
+		void vFCU_FCTL__Init(void);
+		void vFCU_FCTL__Process(void);
+
+			//main state machine
+			void vFCU_FCTL_MAINSM__Init(void);
+			void vFCU_FCTL_MAINSM__Process(void);
+
+			//track DB
+			void vFCU_FCTL_TRACKDB__Init(void);
+			void vFCU_FCTL_TRACKDB__Process(void);
+			void vFCU_FCTL_TRACKDB__Set_CurrentDB(Luint32 u32Key, Luint32 u32TrackID);
+			DLL_DECLARATION Luint32 u32FCU_FCTL_TRACKDB__Get_CurrentDB(void);
+
+				//mem
+				void vFCU_FCTL_TRACKDB_MEM__Init(void);
+				void vFCU_FCTL_TRACKDB_MEM__Process(void);
+				void vFCU_FCTL_TRACKDB_MEM__UploadChunk(Luint32 u32TrackID, Luint32 u32ChunkIndex, Luint32 u32Length, Luint8 *pu8Buffer);
+
+				//win32
+				void vFCU_FCTL_TRACKDB_WIN32__Init(void);
+				void vFCU_FCTL_TRACKDB_WIN32__Process(void);
+				DLL_DECLARATION void vFCU_FCTL_TRACKDB_WIN32__Clear_Array(void);
+				DLL_DECLARATION void vFCU_FCTL_TRACKDB_WIN32__Get_Array(Luint8 *pu8ByteArray);
+				DLL_DECLARATION Luint16 u16FCU_FCTL_TRACKDB_WIN32__Get_StructureSize(void);
+				DLL_DECLARATION void vFCU_FCTL_TRACKDB_WIN32__Set_Array(Luint8 *pu8ByteArray);
+				DLL_DECLARATION void vFCU_FCTL_TRACKDB_WIN32__Set_Header(Luint32 u32Value);
+				DLL_DECLARATION void vFCU_FCTL_TRACKDB_WIN32__Set_DataLength(Luint32 u32Value);
+				DLL_DECLARATION void vFCU_FCTL_TRACKDB_WIN32__Set_TrackID(Luint32 u32Value);
+				DLL_DECLARATION void vFCU_FCTL_TRACKDB_WIN32__Set_TrackStartXPos(Luint32 u32Value);
+				DLL_DECLARATION void vFCU_FCTL_TRACKDB_WIN32__Set_TrackEndXPos(Luint32 u32Value);
+				DLL_DECLARATION void vFCU_FCTL_TRACKDB_WIN32__Set_LRF_StartXPos(Luint32 u32Value);
+				DLL_DECLARATION void vFCU_FCTL_TRACKDB_WIN32__Set_NumStripes(Luint32 u32Value);
+				DLL_DECLARATION void vFCU_FCTL_TRACKDB_WIN32__Set_StripeStartX(Luint32 u32Index, Luint32 u32Value);
+				DLL_DECLARATION void vFCU_FCTL_TRACKDB_WIN32__Set_HeaderSpare(Luint32 u32Index, Luint32 u32Value);
+				DLL_DECLARATION void vFCU_FCTL_TRACKDB_WIN32__Set_Footer(Luint32 u32Value);
+				DLL_DECLARATION void vFCU_FCTL_TRACKDB_WIN32__Set_Profile_PusherFrontStartPos(Luint32 u32Value);
+				DLL_DECLARATION void vFCU_FCTL_TRACKDB_WIN32__Set_Profile_PusherFrontEndPos(Luint32 u32Value);
+				DLL_DECLARATION void vFCU_FCTL_TRACKDB_WIN32__Set_Profile_PodFrontTargetXPos(Luint32 u32Value);
+				DLL_DECLARATION void vFCU_FCTL_TRACKDB_WIN32__Set_Profile_NumSetpoints(Luint32 u32Value);
+				DLL_DECLARATION void vFCU_FCTL_TRACKDB_WIN32__Set_Profile_BrakeSetpointPosX(Luint32 u32Index, Luint32 u32Value);
+				DLL_DECLARATION void vFCU_FCTL_TRACKDB_WIN32__Set_Profile_BrakeSetpointVelocityX(Luint32 u32Index, Luint32 u32Value);
+				DLL_DECLARATION void vFCU_FCTL_TRACKDB_WIN32__Set_Profile_Spare(Luint32 u32Index, Luint32 u32Value);
+				DLL_DECLARATION Luint16 u16FCTL_TRAKDB_WIN32__ComputeCRC(void);
+				DLL_DECLARATION void vFCU_FCTL_TRACKDB_WIN32__Set_CRC(Luint16 u16Value);
+
 
 			//auto sequence
 			void vFCU_MAINSM_AUTO__Init(void);
@@ -762,10 +913,6 @@
 			//ethernet
 			void vFCU_FCTL_ETH__Init(void);
 			void vFCU_FCTL_ETH__Transmit(E_NET__PACKET_T ePacketType);
-
-			//flight controller
-			void vFCU_FLIGHTCTL__Init(void);
-			void vFCU_FLIGHTCTL__Process(void);
 
 
 			// Laser Orientation
@@ -956,6 +1103,9 @@
 		void vFCU_ACCEL__Process(void);
 		Lint16 s16FCU_ACCEL__Get_LastSample(Luint8 u8Index, Luint8 u8Axis);
 		Lfloat32 f32FCU_ACCEL__Get_LastG(Luint8 u8Index, Luint8 u8Axis);
+		DLL_DECLARATION Lint32 s32FCU_ACCELL__Get_CurrentAccel_mmss(Luint8 u8Channel);
+		DLL_DECLARATION Lint32 s32FCU_ACCELL__Get_CurrentVeloc_mms(Luint8 u8Channel);
+		DLL_DECLARATION Lint32 s32FCU_ACCELL__Get_CurrentDisplacement_mm(Luint8 u8Channel);
 
 			//eth
 			void vFCU_ACCEL_ETH__Init(void);
@@ -972,6 +1122,10 @@
 		void vFCU_PUSHER__10MS_ISR(void);
 		Luint8 u8FCU_PUSHER__Get_Switch(Luint8 u8Switch);
 		Luint8 u8FCU_PUSHER__Get_PusherState(void);
+
+			//eth
+			void vFCU_PUSHER_ETH__Init(void);
+			void vFCU_PUSHER_ETH__Transmit(E_NET__PACKET_T ePacketType);
 
 
 		//ASI interface
@@ -1019,6 +1173,20 @@
 			void vFCU_THROTTLE_ETH__Transmit(E_NET__PACKET_T ePacketType);
 			void vFCU_THROTTLE_ETH__Enable_DevMode(Luint32 u32Key0, Luint32 u32Key1);
 			void vFCU_THROTTLE_ETH__Set_Throttle(Luint8 u8EngineIndex, Luint16 u16RPM, E_THROTTLE_CTRL_T eRampType);
+
+		//landing gear
+		void vFCU_LGU__Init(void);
+		void vFCU_LGU__Process(void);
+		void vFCU_LGU__Rx_Byte(Luint8 u8Value);
+		Lint16 s16FCU_LGU__Tx_MessageU32(E_FCU_LGU_COMM_TYPES_T eType, Luint32 u32Value);
+
+		//geometry
+		void vFCU_GEOM__Init(void);
+		void vFCU_GEOM__Process(void);
+
+			//eth
+			void vFCU_GEOM_ETH__Init(void);
+			void vFCU_GEOM_ETH__Transmit(E_NET__PACKET_T ePacketType);
 
 
 		#if C_LOCALDEF__LCCM655__ENABLE_TEST_SPEC == 1U

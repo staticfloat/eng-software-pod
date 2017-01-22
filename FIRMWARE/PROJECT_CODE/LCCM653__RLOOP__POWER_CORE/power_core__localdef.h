@@ -20,6 +20,9 @@ RLOOP - POWER NODE CORE
 		/** Enable the battery temperature measurement system */
 		#define C_LOCALDEF__LCCM653__ENABLE_BATT_TEMP						(1U)
 
+		/** Enable or disable battery temp search */
+		#define C_LOCALDEF__LCCM653__ENABLE_BATT_TEMP_SEARCH				(0U)
+
 		/** Enable the BMS Subsystem */
 		#define C_LOCALDEF__LCCM653__ENABLE_BMS								(1U)
 
@@ -44,6 +47,10 @@ RLOOP - POWER NODE CORE
 
 		/** Enable Ethernet */
 		#define C_LOCALDEF__LCCM653__ENABLE_ETHERNET						(1U)
+
+		/** Enable Pressure Vesel Repress System */
+		#define C_LOCALDEF__LCCM653__ENABLE_PV_REPRESS						(1U)
+
 
 		/** Testing Options */
 		#define C_LOCALDEF__LCCM653__ENABLE_TEST_SPEC						(0U)

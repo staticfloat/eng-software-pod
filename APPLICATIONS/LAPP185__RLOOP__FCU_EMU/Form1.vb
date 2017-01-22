@@ -1048,9 +1048,9 @@ Public Class Form1
             xS16Y = New SIL3.Numerical.S16(Me.m_iAccel0_Y)
             xS16Z = New SIL3.Numerical.S16(Me.m_iAccel0_Z)
         Else
-            xS16X = New SIL3.Numerical.S16(-2002)
-            xS16Y = New SIL3.Numerical.S16(-5005)
-            xS16Z = New SIL3.Numerical.S16(4096)
+            xS16X = New SIL3.Numerical.S16(0)
+            xS16Y = New SIL3.Numerical.S16(2048)
+            xS16Z = New SIL3.Numerical.S16(0)
         End If
 
         'this will result in an arith overflow if not careful.
@@ -1218,12 +1218,21 @@ Public Class Form1
     Private Sub ASI_Tx_RS485(u8Array() As Byte, iLength As Integer)
 
         'Inject into SC16
+        'channel 7 is the RS485
         vSC16IS_WIN32__InjectData(7, u8Array, iLength)
+
     End Sub
 #End Region '#Region "ASI"
 
 End Class
 
+
+''' <summary>
+''' Just a Fake CM30 laser
+''' </summary>
+Public Class CM30Laser
+
+End Class
 
 
 ''' <summary>

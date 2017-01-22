@@ -70,11 +70,26 @@
 			struct
 			{
 
+				/** Temp sensor processing states */
+				E_BATT_TEMP__STATE_T eState;
+
 				/** Loaded from memory the number of configured sensors */
 				Luint16 u16NumSensors;
 
 				/** Pack memory CRC */
 				Luint16 u16PackMemCRC;
+
+				/** Highest Temp */
+				Lfloat32 f32HighestTemp;
+
+				/** The index of the highest temperature sensor */
+				Luint16 u16HighestSensorIndex;
+
+				/** Average Temp */
+				Lfloat32 f32AverageTemp;
+
+				/** Is any new data available? */
+				Luint8 u8NewTempAvail;
 
 			}sTemp;
 
@@ -130,6 +145,12 @@
 				}sAlgo;
 
 
+				/** Configurable Parameters */
+				Lfloat32 f32MaxHighestCell;
+				Lfloat32 f32MaxPackVoltage;
+				Lfloat32 f32MinPackVoltage;
+				Lfloat32 f32MaxCellTemp;
+
 				/** Charger Relay control state */
 				E_PWRNODE__CHG_RLY_STATES_T eRelayState;
 
@@ -138,7 +159,8 @@
 			#endif //C_LOCALDEF__LCCM653__ENABLE_CHARGER
 
 			/** ATA6870 interface */
-			#define NUM_CELLS_PER_MODULE    (6U)
+//			#define NUM_CELLS_PER_MODULE    (6U)
+/*
 			struct
 			{
 
@@ -154,13 +176,13 @@
 				}sDevice[C_LOCALDEF__LCCM650__NUM_DEVICES];
 
 			}sATA6870;
-
+*/
 
 			#if C_LOCALDEF__LCCM653__ENABLE_BMS == 1U
 			/** BMS Subsystem */
 			struct
 			{
-
+				Luint8 u8Dummy;
 			}sBMS;
 			#endif
 
@@ -247,6 +269,8 @@
 		//main application state machine
 		void vPWRNODE_SM__Init(void);
 		void vPWRNODE_SM__Process(void);
+		void vPWRNODE_SM__Enable_ChargingState(void);
+		void vPWRNODE_SM__Stop_ChargingState(void);
 
 		//DC/DC converter system
 		void vPWRNODE_DC__Init(void);
@@ -256,6 +280,7 @@
 		void vPWRNODE_DC__Pod_Safe_Unlock(Luint32 u32UnlockKey);
 		void vPWRNODE_DC__Pod_Safe_Go(void);
 		void vPWRNODE_DC__100MS_ISR(void);
+		void vPWRNODE_DC__Latch(Luint32 u32Key);
 
 		//charger relay
 		void vPWRNODE_CHG_RELAY__Init(void);
@@ -267,6 +292,10 @@
 		void vPWRNODE_CHG__Init(void);
 		void vPWRNODE_CHG__Process(void);
 		void vPWRNODE_CHG__Start(void);
+		Luint8 u8PWRNODE_CHG__Is_Busy(void);
+		void vPWRNODE_CHG__Abort(void);
+		void vPWRNODE_GHG__Start_ManualBalance(void);
+		void vPWRNODE_GHG__Stop_ManualBalance(void);
 
 		//charger current and voltage measurement
 		void vPWRNODE_CHG_IV__Init(void);
@@ -275,6 +304,20 @@
 		//BMS interface layer
 		void vPWRNODE_BMS__Init(void);
 		void vPWRNODE_BMS__Process(void);
+		Lfloat32 f32PWRNODE_BMS__Cell_Get_HighestVoltage(void);
+		Lfloat32 f32PWRNODE_BMS__Cell_Get_LowestVoltage(void);
+		Lfloat32 f32PWRNODE_BMS__Get_PackVoltage(void);
+		Luint8 u8PWRNODE_BMS__Balance_IsBusy(void);
+		void vPWRNODE_BMS__Balance_Start(void);
+		void vPWRNODE_BMS__Balance_Stop(void);
+		void vPWRNODE_BMS__Balance_Manual(Luint8 u8CellIndex, Luint8 u8Enable);
+		Luint32 u32PWRNODE_BMS__Get_VoltsUpdateCount(void);
+
+			//eth
+			void vPWR_BMS_ETH__Init(void);
+			void vPWR_BMS_ETH__Transmit(E_NET__PACKET_T ePacketType);
+
+
 
 		//pi comms interface
 		void vPWRNODE_PICOMMS__Init(void);
@@ -302,12 +345,12 @@
 		//battery temperature system
 		void vPWRNODE_BATTTEMP__Init(void);
 		void vPWRNODE_BATTTEMP__Process(void);
-		void vPWRNODE_BATTTEMP__Start_Search(void);
-		Luint8 u8PWRNODE_BATTTEMP__Search_IsBusy(void);
+		Luint8 u8PWR_BATTTEMP__Is_Avail(void);
 
 			//memory system
 			void vPWRNODE_BATTTEMP_MEM__Init(void);
 			void vPWRNODE_BATTTEMP_MEM__Process(void);
+			Lint16 s16PWRNODE_BATTEMP_MEM__Load(void);
 			Luint16 u16PWRNODE_BATTTEMP_MEM__Get_NumSensors(void);
 			void vPWRNODE_BATTEMP_MEM__Set_ROMID(Luint16 u16Index, Luint32 u32ROMID_Upper, Luint32 u32ROMID_Lower);
 			void vPWRNODE_BATTEMP_MEM__Set_UserData(Luint16 u16Index, Luint16 UserIndex, Luint8 u8BusID, Luint8 u8Resolution);
@@ -326,6 +369,10 @@
 		void vPWRNODE_NODEPRESS__Init(void);
 		void vPWRNODE_NODEPRESS__Process(void);
 		Lfloat32 f32PWRNODE_NODEPRESS__Get_Pressure_Bar(void);
+
+		//PV repress system
+		void vPWR_PVPRESS__Init(void);
+		void vPWR_PVPRESS__Process(void);
 
 #ifdef WIN32
 		void vPWRNODE_WIN32__Init(void);

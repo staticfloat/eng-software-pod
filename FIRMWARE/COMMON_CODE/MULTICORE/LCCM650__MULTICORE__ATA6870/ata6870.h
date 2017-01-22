@@ -37,14 +37,18 @@
 
 
 		/** Voltage input measurement resolution in VOLTS */
-		#define C_ATA6870__ADC_RES_V				(0.0015F)
+		#define C_ATA6870__ADC_RES_V				(0.00152656F)
 
 		/** Voltage thresholds for each module, CHANGE IF NEEDED*/
 		#define C_ATA6870__MIN_VOLTS				(3.5)
 		#define C_ATA6870__MAX_VOLTS				(4.3)
 
-		/** mV Offset */
+		/** mV Offset
+		 * CONSIDER: Do not change this*/
 		#define C_ATA6870__OFFSET_VOLTAGE 			(410.0F)
+
+		/** Max ATA devices on any one bus */
+		#define C_ATA6870__MAX_BUS_DEVICES			(16U)
 
 		/** Balancer Stats */
 		typedef enum
@@ -76,6 +80,8 @@
 			ATA6870_STATE__START_CONVERSION,
 			ATA6870_STATE__WAIT_CONVERSION,
 			ATA6870_STATE__READ_CELL_VOLTAGES,
+			ATA6870_STATE__RUN_FILTERING,
+
 			ATA6870_STATE__SUM_CELL_VOLTAGES,
 			ATA6870_STATE__AVERAGE_CELL_VOLTAGES,
 
@@ -90,6 +96,9 @@
 		struct _str6870
 		{
 			E_ATA6870_STATE_T eState;
+
+			/** A list of all revision ID's found on each bus */
+			Luint8 u8RevID[C_ATA6870__MAX_BUS_DEVICES];
 
 			/** Balancing control state machine */
 			struct
@@ -128,8 +137,30 @@
 			/** NTC Temperature Reading **/
 			Lfloat32 f32NTCTemperatureReading[C_LOCALDEF__LCCM650__NUM_DEVICES];
 
+
 			/** Voltages of a complete battery pack **/
 			Lfloat32 f32Voltage[C_ATA6870__TOTAL_CELLS];
+
+			#if C_LOCALDEF__LCCM650__AVERAGE_WINDOW > 0U
+
+				/** buffers of the filtered voltages */
+				Lfloat32 f32VoltagesBuffer[C_ATA6870__TOTAL_CELLS][C_LOCALDEF__LCCM650__AVERAGE_WINDOW];
+
+				/** The filter position */
+				Luint16 u16AverageCounter[C_ATA6870__TOTAL_CELLS];
+
+				/** The filtered voltage */
+				Lfloat32 f32FiltVoltage[C_ATA6870__TOTAL_CELLS];
+
+			#else
+
+			#endif
+
+			/** just a counter for the number of times the volts have been re-read*/
+			Luint32 u32VoltsUpdateCount;
+
+			/** Current filtering channel */
+			Luint16 u16FilteringChannel;
 
 			/** Total battery pack voltage */
 			Lfloat32 f32PackVoltage;
@@ -150,6 +181,7 @@
 		void vATA6870__Init(void);
 		void vATA6870__Process(void);
 		void vATA6870__10MS_ISR(void);
+		Luint32 u32ATA6870__Get_VoltsUpdateCount(void);
 		
 		//balance control
 		void vATA6870_BALANCE__Init(void);
@@ -157,6 +189,7 @@
 		void vATA6870_BALANCE__Stop(void);
 		Luint8 u8ATA6870_BALANCE__Is_Busy(void);
 		void vATA6870_BALANCE__Process(void);
+		void vATA6870_BALANCE__Manual(Luint8 u8CellIndex, Luint8 u8Enable);
 
 		//lowlevel
 		void vATA6870_LOWLEVEL__Init(void);
@@ -171,10 +204,14 @@
 		Lint16 s16ATA6870_CELL__BulkRead_All(void);
 		void vATA6870_CELL__Average_CellVoltages(void);
 		void vATA6870_CELL__Sum_CellVoltages(void);
+		Lfloat32 f32ATA6870_CELL__Get_PackVoltage(void);
 		Lint16 s16ATA6870_CELL__Check_CellVoltageError(Lfloat32 *pf32Voltages);
+		Lfloat32 f32ATA6870_CELL__Get_HighestVoltage(void);
+		Lfloat32 f32ATA6870_CELL__Get_LowestVoltage(void);
 		
 		//device scanning
 		void vATA6870_SCAN__Start(void);
+		void vATA6870_SCAN__Init(void);
 
 		//resisotr control
 		void vATA6870_RES__TurnOn(Luint8 u8DeviceIndex, Luint8 u8CellIndex);

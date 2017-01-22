@@ -113,6 +113,10 @@
       <Link>LCCM661__RLOOP__RPOD_GUI\PANELS\FLIGHT_CONTROL\FAULTS\rpod__flight__faults.vb</Link>
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="..\PROJECT_CODE\VB.NET\LCCM661__RLOOP__RPOD_GUI\PANELS\FLIGHT_CONTROL\GEOMETRY\rpod__flight__geometry.vb">
+      <Link>LCCM661__RLOOP__RPOD_GUI\PANELS\FLIGHT_CONTROL\GEOMETRY\rpod__flight__geometry.vb</Link>
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="..\PROJECT_CODE\VB.NET\LCCM661__RLOOP__RPOD_GUI\PANELS\FLIGHT_CONTROL\LASER_DISTANCE\rpod__flight__laser_dist.vb">
       <Link>LCCM661__RLOOP__RPOD_GUI\PANELS\FLIGHT_CONTROL\LASER_DISTANCE\rpod__flight__laser_dist.vb</Link>
       <SubType>Component</SubType>
@@ -125,6 +129,10 @@
       <Link>LCCM661__RLOOP__RPOD_GUI\PANELS\FLIGHT_CONTROL\OPTONCDT\rpod__flight__optoncdt.vb</Link>
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="..\PROJECT_CODE\VB.NET\LCCM661__RLOOP__RPOD_GUI\PANELS\FLIGHT_CONTROL\PUSHER\rpod__flight__pusher.vb">
+      <Link>LCCM661__RLOOP__RPOD_GUI\PANELS\FLIGHT_CONTROL\PUSHER\rpod__flight__pusher.vb</Link>
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="..\PROJECT_CODE\VB.NET\LCCM661__RLOOP__RPOD_GUI\PANELS\FLIGHT_CONTROL\rpod__flight__top.vb">
       <Link>LCCM661__RLOOP__RPOD_GUI\PANELS\FLIGHT_CONTROL\rpod__flight__top.vb</Link>
     </Compile>
@@ -134,6 +142,14 @@
     </Compile>
     <Compile Include="..\PROJECT_CODE\VB.NET\LCCM661__RLOOP__RPOD_GUI\PANELS\FLIGHT_CONTROL\THROTTLE\rpod__flight__throttle.vb">
       <Link>LCCM661__RLOOP__RPOD_GUI\PANELS\FLIGHT_CONTROL\THROTTLE\rpod__flight__throttle.vb</Link>
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="..\PROJECT_CODE\VB.NET\LCCM661__RLOOP__RPOD_GUI\PANELS\FLIGHT_CONTROL\TRACK_DATABASE\rpod__flight__track_db_create.vb">
+      <Link>LCCM661__RLOOP__RPOD_GUI\PANELS\FLIGHT_CONTROL\TRACK_DATABASE\rpod__flight__track_db_create.vb</Link>
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="..\PROJECT_CODE\VB.NET\LCCM661__RLOOP__RPOD_GUI\PANELS\FLIGHT_CONTROL\TRACK_DATABASE\rpod__flight__track_db_monitor.vb">
+      <Link>LCCM661__RLOOP__RPOD_GUI\PANELS\FLIGHT_CONTROL\TRACK_DATABASE\rpod__flight__track_db_monitor.vb</Link>
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="..\PROJECT_CODE\VB.NET\LCCM661__RLOOP__RPOD_GUI\PANELS\SETTINGS\rpod__panel_settings__network.vb">

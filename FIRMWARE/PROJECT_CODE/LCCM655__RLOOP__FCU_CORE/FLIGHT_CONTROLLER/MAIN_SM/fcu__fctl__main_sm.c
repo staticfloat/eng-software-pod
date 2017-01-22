@@ -107,8 +107,15 @@ void vFCU_FCTL_MAINSM__Process(void)
 
 			//finally init the flight controller
 			#if C_LOCALDEF__LCCM655__ENABLE_FLIGHT_CONTROL == 1U
-				vFCU_FLIGHTCTL__Init();
+				vFCU_FCTL__Init();
 			#endif
+
+			//start the LGU interface
+			#if C_LOCALDEF__LCCM655__LGU_COMMS_SYSTEM == 1U
+				vFCU_LGU__Init();
+			#endif
+
+			vFCU_GEOM__Init();
 
 			//put the flight computer into startup mode now that everything has been initted.
 			sFCU.eMissionPhase = MISSION_PHASE__TEST_PHASE;
@@ -162,7 +169,7 @@ void vFCU_FCTL_MAINSM__Process(void)
 			//if we are in this state, we are ready for flight
 
 			#if C_LOCALDEF__LCCM655__ENABLE_FLIGHT_CONTROL == 1U
-				vFCU_FLIGHTCTL__Process();
+				vFCU_FCTL__Process();
 			#endif
 
 
@@ -238,6 +245,13 @@ void vFCU_FCTL_MAINSM__Process(void)
 		#if C_LOCALDEF__LCCM655__ENABLE_PI_COMMS == 1U
 			vFCU_PICOMMS__Process();
 		#endif
+
+		//start the LGU interface
+		#if C_LOCALDEF__LCCM655__LGU_COMMS_SYSTEM == 1U
+			vFCU_LGU__Process();
+		#endif
+
+		vFCU_GEOM__Process();
 
 		//process auto-sequence control
 		vFCU_MAINSM_AUTO__Process();
