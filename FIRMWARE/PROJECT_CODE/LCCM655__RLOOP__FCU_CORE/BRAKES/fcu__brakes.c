@@ -245,6 +245,11 @@ void vFCU_BRAKES__Process(void)
 			//a fault has occurred
 			break;
 
+		case BRAKE_STATE__TEST:
+					//just LG test area.
+					vFCU_BRAKES__Move_IBeam_Distance_mm(50000);
+					break;
+
 		default:
 			//do nothing
 			break;
@@ -427,15 +432,15 @@ void vFCU_BRAKES__Move_IBeam_Distance_mm(Lfloat32 f32Distance)
 
 		//change state
 		//Don't change state if we are not idle.
-		if(sFCU.sBrakesGlobal.eBrakeStates == BRAKE_STATE__IDLE)
-		{
+		//if(sFCU.sBrakesGlobal.eBrakeStates == BRAKE_STATE__IDLE)
+		//{
 			sFCU.sBrakesGlobal.eBrakeStates = BRAKE_STATE__BEGIN_MOVE;
-		}
-		else
-		{
-			//brake move not possible yet
-			//todo: report back up the stack
-		}
+//		}
+//		else
+//		{
+//			//brake move not possible yet
+//			//todo: report back up the stack
+//		}
 
 	}
 	else
