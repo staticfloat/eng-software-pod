@@ -50,22 +50,6 @@
 			/** Structure guard 1*/
 			Luint32 u32Guard1;
 
-			/** State Machine Structure **/
-			struct
-			{
-				/** The mission phases
-				 * http://confluence.rloop.org/display/SD/1.+Determine+Mission+Phases+and+Operating+States
-				 * */
-				E_FCU__MISSION_PHASE_T eMissionPhase;
-
-				/** Counter to count the time elapsed from the disconnection from the pusher **/
-				Luint32 Counter;
-
-				/** Enable Counter counting time elapsed from the disconnection from the pusher **/
-				Luint8 EnableCounter;
-
-			}sStateMachine
-
 			/** Auto sequence state machine */
 			E_FCU__AUTO_SEQUENCE_STATE_T eAutoSeqState;
 
