@@ -70,6 +70,32 @@
 
 			}sFaults;
 
+			//#if C_LOCALDEF__LCCM655__ENABLE_HOVERENGINES_CONTROL == 1U
+			struct
+			{
+				/** The hover engines state machine */
+				E_FCU__HOVERENGINES__STATES_T eState;
+
+				/** The hover engines input commands from GS */
+				E_GS_COMMANDS u16HoverEnginesCommands;
+
+				/** The hover engines command values from GS */
+				Lint32 u16HoverEnginesCommandValues;
+
+
+				/** Internal parameters */
+				struct
+				{
+					Luint8  u8Enable;
+					Luint8  u8RunAuto;
+					Luint8  u8SpeedState;
+					Luint32 u32CurrentRPMValue[8];
+					Luint8  u8TempVar;
+
+				} sHoverenginesIntParams;
+
+			}sHoverengines;
+			//#endif
 
 			#if C_LOCALDEF__LCCM655__ENABLE_BRAKES == 1U
 

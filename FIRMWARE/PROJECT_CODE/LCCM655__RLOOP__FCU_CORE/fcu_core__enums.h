@@ -101,17 +101,35 @@
 	}E_FCU__SWITCH_STATE_T;
 
 
-	/** Ground station commands for throttle layer  */
+	/** Ground station commands for Controlling Hover Hengines and throttle layer  */
 	// (added by @gsweriduk on 23 NOV 2016)
+	// (modified by @acaratel on 19 Jan 2017)
 	// Partial list, see http://confluence.rloop.org/display/SD/Commands+from+Ground+Station+to+rPod
 
 	typedef enum
 	{
+		DO_NOTHING = 0U,
 		STATIC_HOVERING,
 		RELEASE_STATIC_HOVERING,
-		SET_HEX_SPEED,
+		M_SET_SPEED_HE1,
+		M_SET_SPEED_HE2,
+		M_SET_SPEED_HE3,
+		M_SET_SPEED_HE4,
+		M_SET_SPEED_HE5,
+		M_SET_SPEED_HE6,
+		M_SET_SPEED_HE7,
+		M_SET_SPEED_HE8,
 		SET_ALL_HE_SPEED
 	} E_GS_COMMANDS;
+
+
+	/** State types for the Control Hoverengines state machine */
+	typedef enum {
+		HOVERENGINES_STATE__IDLE,
+		HOVERENGINES_STATE__ENABLE_1TH_GROUP,
+		HOVERENGINES_STATE__ENABLE_2ND_GROUP,
+		HOVERENGINES_STATE__HOVERING
+	} E_FCU__HOVERENGINES__STATES_T;
 
 	/** Flight Control Unit Modes  */
 	// (added by @gsweriduk on 23 NOV 2016)
