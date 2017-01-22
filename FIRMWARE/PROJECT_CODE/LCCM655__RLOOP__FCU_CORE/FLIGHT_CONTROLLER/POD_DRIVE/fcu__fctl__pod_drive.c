@@ -182,7 +182,7 @@ void vFCU_FLIGHTCTL_PODDRIVE__Process(void)
 				case PODDRIVE_PRERUN_GIMBAL_BACKWARD:
 					if (sFCU.sPodDrive.u8100MS_Timer == 0)
 					{
-						vFCU_GIMBAL__SetLevel(GIMBAL_BACKWARD_LEVEL);
+						vFCU_FLIGHTCTL_GIMBAL__SetLevel(GIMBAL_BACKWARD_LEVEL);
 					}
 					if (vFCU_PUSHER__GetState() == 1U)	// connected to pusher
 					{

@@ -149,6 +149,10 @@ case NET_PKT__FCU_LIFTMECH__RELEASE:
 	#endif
 	break;
 
+// need to implement these functions
+//vFCU_FLIGHTCTL_LIFTMECH__Get_MLP
+//vFCU_FLIGHTCTL_LIFTMECH_Dir
+//vFCU_FLIGHTCTL_LIFTMECH_Speed
 
 // start of this module
 void vFCU_FLIGHTCTL_LIFTMECH__Release(void)

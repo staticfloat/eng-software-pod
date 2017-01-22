@@ -163,6 +163,16 @@ case NET_PKT__FCU_EDDYBRAKES__FULL_BRAKES:
 	break;
 
 
+// need to implement:
+//vFCU_FLIGHTCTL_EDDY_BRAKES__ControlledEmergencyBrake    // controlled full eddy brakes until speed < C_FCU__PODSPEED_STANDBY
+//vFCU_FLIGHTCTL_EDDY_BRAKES__GainScheduleController	// pid controller for brakes until position < C_FCU__POD_STOP_X_PO
+//vFCU_FLIGHTCTL_EDDY_BRAKES__GimbalSpeedController		// pid controller for gimbals when speed < C_FCU__PODSPEED_MAX_SPEED_TO_STABILIZE
+//u8FCU_FLIGHTCTL_EDDY_BRAKES_GetStepMotorTemp
+//vFCU_FLIGHTCTL_EDDYBRAKES_Dir
+//vFCU_FLIGHTCTL_EDDYBRAKES_Speed
+
+
+
 // start of this module
 
 void vFCU_FLIGHTCTL_EDDY_BRAKES__ControlledEmergencyBrake()
