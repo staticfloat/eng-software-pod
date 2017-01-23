@@ -118,20 +118,14 @@ void vFCU_FCTL_MAINSM__Process(void)
 			vFCU_GEOM__Init();
 
 			//put the flight computer into startup mode now that everything has been initted.
-			sFCU.eMissionPhase = MISSION_PHASE__TEST_PHASE;
+			sFCU.eMissionPhase = MISSION_PHASE__TEST;
 
 			break;
 
-		case MISSION_PHASE__TEST_PHASE:
-			//run what we need to in startup mode, checkout sensors and other diagnostics
 
-			//xxxxxxxxxxxxxxxxxxxxxxxxTEMPORARY @gsweriduk 15DEC xxxxxxxxxxxxxxxxxxxxxxxx
-			//sFCU.eMissionPhase = MISSION_PHASE__AUTO_SEQUENCE_MODE;
-			//xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-			break;
-
-		case MISSION_PHASE__AUTO_SEQUENCE_MODE:
-			//in this mode we are performing an auto-sequence
+		case MISSION_PHASE__TEST:
+			
+			//in this mode we are performing tests of all of the sensors and motors pl an auto-sequence
 
 			//see if we have an auto sequence abort
 			u8Test = u8FCU_MAINSM_AUTO__Is_Abort();

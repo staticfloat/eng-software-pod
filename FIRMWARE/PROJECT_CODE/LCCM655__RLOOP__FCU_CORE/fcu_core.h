@@ -55,8 +55,20 @@
 			 * */
 			E_FCU__RUN_STATE_T eMissionPhase;
 
-			/** Auto sequence state machine */
-			E_FCU__AUTO_SEQUENCE_STATE_T eAutoSeqState;
+			struct
+			{
+				/** Auto sequence state machine */
+				E_FCU__AUTO_SEQUENCE_STATE_T eAutoSeqState;
+
+				/** Controls the execution of test phase
+				 * This is used kick start auto seq test or skip tests
+				 * or kill them
+				 * */
+				E_FCU__AUTO_SEQUENCE_CONTROL_T eAutoSeqControl;
+
+				/** Do we need an immediate abort */
+				Luint8 u8IsAutoSequenceAbort;
+			}sAutoSequence;
 
 			/** The init statemachine */
 			E_FCU__INIT_STATE_TYPES eInitStates;

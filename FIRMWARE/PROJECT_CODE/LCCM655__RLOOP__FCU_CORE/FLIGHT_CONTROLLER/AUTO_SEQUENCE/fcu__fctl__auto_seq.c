@@ -32,7 +32,7 @@ extern struct _strFCU sFCU;
  */
 void vFCU_MAINSM_AUTO__Init(void)
 {
-	sFCU.eAutoSeqState = AUTOSEQ_STATE__RESET;
+	sFCU.sAutoSequence.eAutoSeqState = AUTOSEQ_STATE__RESET;
 
 }
 
@@ -47,6 +47,7 @@ void vFCU_MAINSM_AUTO__Init(void)
 void vFCU_MAINSM_AUTO__Process(void)
 {
 	Luint8 u8Counter;
+	Luint8 u8IsCalibrationDone;
 	Lfloat32 f32IBeam_Left_mm;
 	Lfloat32 f32IBeam_Right_mm;
 
@@ -57,17 +58,61 @@ void vFCU_MAINSM_AUTO__Process(void)
 	E_FCU__SWITCH_STATE_T eSwitchState_Right_Retract;
 
 	//hande the state machine.
-	switch(sFCU.eAutoSeqState)
+	switch(sFCU.sAutoSequence.eAutoSeqState)
 	{
 
 		case AUTOSEQ_STATE__RESET:
 			//we have just come out of reset here.
 
 			//change state.
-			sFCU.eAutoSeqState = AUTOSEQ_STATE__IDLE;
+			sFCU.sAutoSequence.eAutoSeqState = AUTOSEQ_STATE__IDLE;
 			break;
 
 		case AUTOSEQ_STATE__IDLE:
+
+			switch(sFCU.sAutoSequence.eAutoSeqControl)
+			{
+				case AUTOSEQ_TEST_NOT_START:
+					// Don't do any thing. Stay in AUTOSEQ_STATE__IDLE
+					break;
+
+				case AUTOSEQ_TEST_START:
+					// ground station has asked to start.
+					// check if all calibration is already done and only then
+					// start testing
+
+					// First routine is checking brakes.
+					u8IsCalibrationDone = u8FCU_BRAKES_CAL__Is_Busy();
+
+					if(u8IsCalibrationDone)
+					{
+						// todo For now, just move to done for testing
+						sFCU.sAutoSequence.eAutoSeqState = AUTOSEQ_STATE__TEST_DONE;
+					}
+					else
+					{
+						// Nothing to do, stay here, calibration needs more time
+					}
+					break;
+
+				case AUTOSEQ_TEST_SKIP:
+
+					// Auto sequence routine completely skipped, can be done only
+					// through a ground station command.
+					sFCU.sAutoSequence.eAutoSeqState = AUTOSEQ_STATE__TEST_DONE;
+					break;
+
+				case AUTOSEQ_TEST_KILL:
+
+					// Auto sequence routine completely killed, can be done only
+					// through a ground station command.
+					sFCU.sAutoSequence.eAutoSeqState = AUTOSEQ_STATE__TEST_DONE;
+					break;
+
+				default:
+					// Nothing to do
+					break;
+			}
 
 			break;
 
@@ -91,7 +136,7 @@ void vFCU_MAINSM_AUTO__Process(void)
 
 			// In any case, time to go to next state to see if the sensors give
 			// expected result from the above actuation
-			sFCU.eAutoSeqState = AUTOSEQ_STATE__TEST_FUNCTION_BRAKES_INIT_EXPECTED_RESULT;
+			sFCU.sAutoSequence.eAutoSeqState = AUTOSEQ_STATE__TEST_FUNCTION_BRAKES_INIT_EXPECTED_RESULT;
 			break;
 
 		case AUTOSEQ_STATE__TEST_FUNCTION_BRAKES_INIT_EXPECTED_RESULT:
@@ -111,7 +156,7 @@ void vFCU_MAINSM_AUTO__Process(void)
 			{
 				// Stepper motor, Limit switch and MLP show we are retracted.
 				// Let's go to next test case
-				sFCU.eAutoSeqState = AUTOSEQ_STATE__TEST_FUNCTION_BRAKE_HALF_WAY_ACTION;
+				sFCU.sAutoSequence.eAutoSeqState = AUTOSEQ_STATE__TEST_FUNCTION_BRAKE_HALF_WAY_ACTION;
 			}
 			else
 			{
@@ -152,7 +197,7 @@ void vFCU_MAINSM_AUTO__Process(void)
 
 						// Brakes asked to move half way. This won't happen immediately.
 						// Let's go to the next state to read the sensors for results
-						sFCU.eAutoSeqState = AUTOSEQ_STATE__TEST_FUNCTION_BRAKE_HALF_WAY_EXPECTED_RESULT;
+						sFCU.sAutoSequence.eAutoSeqState = AUTOSEQ_STATE__TEST_FUNCTION_BRAKE_HALF_WAY_EXPECTED_RESULT;
 					}
 				}
 			}
@@ -197,7 +242,7 @@ void vFCU_MAINSM_AUTO__Process(void)
 					if ((f32IBeam_Right_mm >= C_FCU__BRAKES__HALF_WAY_IBEAM_DIST_LOW_BOUND_MM) && (f32IBeam_Right_mm <= C_FCU__BRAKES__HALF_WAY_IBEAM_DIST_UP_BOUND_MM))
 					{
 						// THEN, everything looks good. Let's move to the next test phase
-						sFCU.eAutoSeqState = AUTOSEQ_STATE__TEST_FUNCTION_BRAKE_FULL_EXTEND_ACTION;
+						sFCU.sAutoSequence.eAutoSeqState = AUTOSEQ_STATE__TEST_FUNCTION_BRAKE_FULL_EXTEND_ACTION;
 					}
 				}
 			}
@@ -231,7 +276,7 @@ void vFCU_MAINSM_AUTO__Process(void)
 
 				// The deed is done, let's go to the next state to check if we
 				// are fully extended
-				sFCU.eAutoSeqState = AUTOSEQ_STATE__TEST_FUNCTION_BRAKE_FULL_EXTEND_EXPECTED_RESULT;
+				sFCU.sAutoSequence.eAutoSeqState = AUTOSEQ_STATE__TEST_FUNCTION_BRAKE_FULL_EXTEND_EXPECTED_RESULT;
 			}
 			else
 			{
@@ -274,7 +319,7 @@ void vFCU_MAINSM_AUTO__Process(void)
 					if((f32IBeam_Right_mm >= C_FCU__BRAKES__MIN_IBEAM_DIST_LOW_BOUND_MM) && (f32IBeam_Right_mm <= C_FCU__BRAKES__MIN_IBEAM_DIST_UP_BOUND_MM))
 					{
 						// Yes, THEN, we are good to go for the next state.
-						sFCU.eAutoSeqState = AUTOSEQ_STATE__TEST_FUNCTION_BRAKE_FULL_RETRACT_ACTION;
+						sFCU.sAutoSequence.eAutoSeqState = AUTOSEQ_STATE__TEST_FUNCTION_BRAKE_FULL_RETRACT_ACTION;
 					}
 				}
 			}
@@ -308,7 +353,7 @@ void vFCU_MAINSM_AUTO__Process(void)
 
 				// The deed is done, let's go to the next state to check if we
 				// are fully extended
-				sFCU.eAutoSeqState = AUTOSEQ_STATE__TEST_FUNCTION_BRAKE_FULL_RETRACT_EXPECTED_RESULT;
+				sFCU.sAutoSequence.eAutoSeqState = AUTOSEQ_STATE__TEST_FUNCTION_BRAKE_FULL_RETRACT_EXPECTED_RESULT;
 			}
 			else
 			{
@@ -352,7 +397,7 @@ void vFCU_MAINSM_AUTO__Process(void)
 					{
 						// Yes, THEN, we are good to go for the next state.
 						// FOR NOW, this finishes our auto sequence testing
-						sFCU.eAutoSeqState = AUTOSEQ_STATE__IDLE;
+						sFCU.sAutoSequence.eAutoSeqState = AUTOSEQ_STATE__IDLE;
 					}
 				}
 			}
@@ -363,14 +408,15 @@ void vFCU_MAINSM_AUTO__Process(void)
 			}
 
 
-		case AUTOSEQ_STATE__TEST_FUNCTION_X:
+		case AUTOSEQ_STATE__TEST_DONE:
 
-			/* Todo:
-			 * Check function X
-			 * If X = OK then move to next state, else abort state.
-			 *
-			 *
-			 */
+			// you can be here if the test phase was
+			// 1) Successful
+			// 2) Failed
+			// 3) Skipped entirely
+			// 4) Killed from ground station
+
+
 
 			break;
 
@@ -395,7 +441,7 @@ Luint8 u8FCU_MAINSM_AUTO__Is_Busy(void)
 {
 	Luint8 u8Return;
 
-	if(sFCU.eAutoSeqState == AUTOSEQ_STATE__IDLE)
+	if(sFCU.sAutoSequence.eAutoSeqState == AUTOSEQ_STATE__TEST_DONE)
 	{
 		u8Return = 0U;
 	}
@@ -418,7 +464,7 @@ Luint8 u8FCU_MAINSM_AUTO__Is_Busy(void)
  */
 Luint8 u8FCU_MAINSM_AUTO__Is_Abort(void)
 {
-	return 0;
+	return sFCU.sAutoSequence.u8IsAutoSequenceAbort;
 }
 
 

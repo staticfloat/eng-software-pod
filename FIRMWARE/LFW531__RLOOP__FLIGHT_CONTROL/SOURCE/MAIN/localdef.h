@@ -206,6 +206,9 @@ RLOOP - FLIGHT CONTROL UNIT - CORE
 			/** Track Database */
 			#define C_LOCALDEF__LCCM655__ENABLE_TRACK_DB						(1U)
 
+			/** Enable test phase */
+			#define C_LOCALDEF__LCCM655__ENABLE_FCTL_TEST_PHASE                 (1u)
+
 
 		/** ADC Sample Limits */
 		#define C_LOCALDEF__LCCM655__ADC_SAMPLE__LOWER_BOUND				(300U)

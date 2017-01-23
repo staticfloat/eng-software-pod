@@ -67,7 +67,7 @@
 		 * Diagnostics here will be on systems that do not involve actuators such as
 		 * memory CRC tests, etc.
 		 * We can stay in startup mode, or startup-fail mode if something is not right here.*/
-		MISSION_PHASE__TEST_PHASE,
+		MISSION_PHASE__TEST,
 
 
 		MISSION_PHASE__PRE_RUN_PHASE,
@@ -82,11 +82,6 @@
 		/** we have aborted flight, need to cleanup systems, landing gear and safe the pod.
 		 * This mode can also be the flight finished mode. */
 		RUN_STATE__FLIGHT_ABORT,
-		/** In this mode the pod takes care of its functional tests as a terminal countdown.
-		 * Autosequence is entered by the GS and once Autosequence tests are complete we
-		 * move to flight mode. */
-		MISSION_PHASE__AUTO_SEQUENCE_MODE,
-
 
 	}E_FCU__RUN_STATE_T;
 
@@ -116,11 +111,33 @@
 
 		AUTOSEQ_STATE__TEST_FUNCTION_BRAKE_FULL_RETRACT_EXPECTED_RESULT,
 
-		AUTOSEQ_STATE__TEST_FUNCTION_X
+		AUTOSEQ_STATE__TEST_DONE
 
 
 	}E_FCU__AUTO_SEQUENCE_STATE_T;
 
+	/** Test phase control
+	 *  The test phase control will be used by ground station to control
+	 *  our automated test sequence
+	 * */
+	typedef enum
+	{
+		AUTOSEQ_TEST_NOT_START = 0,
+
+		/** Start the auto sequence test, applicable when Test phase
+		 * still in idle.
+		 */
+		AUTOSEQ_TEST_START,
+
+		/** Skip the entire auto test sequence in test phase, applicable
+		 * when test phase still in idle.
+		 */
+		AUTOSEQ_TEST_SKIP,
+
+		/** Kill the auto sequence test phase at any point during the test */
+		AUTOSEQ_TEST_KILL,
+
+	}E_FCU__AUTO_SEQUENCE_CONTROL_T;
 
 
 	/** Opto NCDT Laser processing subsystem state machine */
