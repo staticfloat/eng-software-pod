@@ -70,6 +70,9 @@ struct
 	/** Enum for Pod Status for SpaceX telemetry */
 	E_FCU__POD_STATUS ePodStatus;
 
+	/** Enum for GS commands */
+	E_FCU__MAINSM_GS_COMM eGSCommand;
+
 	/** Operating States Structure*/
 	struct
 	{
@@ -162,8 +165,16 @@ typedef enum
 
 typedef enum
 {
-	MAINSM_GS_ENTER_PRE_RUN_PHASE = 0U
+	MAINSM_GS_NO_CMD = 0U
+	MAINSM_GS_ENTER_PRE_RUN_PHASE = 1U
 }E_FCU__MAINSM_GS_COMM;
+
+//TODO: GS transition to PRE RUN PHASE command to add to fcu_core_net_rx.c:
+case NET_PKT__FCU_GEN__ENTER_PRE_RUN_PHASE_COMMAND:
+	#if C_LOCALDEF__LCCM655__ENABLE_MAINSM_CONTROL == 1U
+		vFCU_FCTL_MAINSM__EnterPreRun_Phase();
+	#endif
+	break;
 
 
 /***************************************************************************//**
@@ -404,7 +415,7 @@ void vFCU_FCTL_MAINSM__Process(void)
 			u32PodSpeed = u32FCU_FLIGHTCTL_NAV__PodSpeed();
 			void vFCU_FCTL_MAINSM__EnterPreRun_Phase(Luint32 u32Key)
 
-			if(u32PodSpeed < PODSPEED_STANDBY) && (sFCU.sStateMachine.eGSCommands == POST_RUN_TO_PRE_RUN)
+			if(u32PodSpeed < PODSPEED_STANDBY) && (sFCU.sStateMachine.eGSCommands == MAINSM_GS_ENTER_PRE_RUN_PHASE)
 			{
 				sFCU.sStateMachine.eMissionPhase = MISSION_PHASE__PRE_RUN;
 			}
@@ -515,9 +526,9 @@ void vFCU_FCTL_MAINSM__Process(void)
 }
 
 //allows us to enter pre-run phase from ethernet
-void vFCU_FCTL_MAINSM__EnterPreRun_Phase(Luint32 u32Key)
+void vFCU_FCTL_MAINSM__EnterPreRun_Phase(void)
 {
-	sFCU.sStateMachine.eMissionPhase = MISSION_PHASE__PRE_RUN
+	sFCU.sStateMachine.eGSCommand = MAINSM_GS_ENTER_PRE_RUN_PHASE;
 }
 
 void vFCU_FCTL_MAINSM__100MS_ISR(void)
