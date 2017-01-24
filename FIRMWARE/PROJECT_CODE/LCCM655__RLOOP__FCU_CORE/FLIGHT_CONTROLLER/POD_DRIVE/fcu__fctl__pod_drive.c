@@ -218,7 +218,7 @@ void vFCU_FLIGHTCTL_PODDRIVE__Process(void)
 			u32PodPos = u32FCU_FLIGHTCTL_NAV__GetFrontPos();
 			u32PodSpeed = u32FCU_FLIGHTCTL_NAV__PodSpeed;
 
-			if (sFCU.sPodDrive.eGSCommand == PODDRIVE_GS_POD_STOP;) || (u32PodSpeed > C_FCU__PODSPEED_TOO_HIGH) || (FCU watchdog failure)
+			if ((sFCU.sPodDrive.eGSCommand == PODDRIVE_GS_POD_STOP;) || (u32PodSpeed > C_FCU__PODSPEED_TOO_HIGH) || (FCU watchdog failure)
 					|| (u8FCU_FLIGHTCTL_EDDY_BRAKES_GetStepMotorTemp(EDDYBRAKES_Left) > C_FCU__EDDYBRAKES_STEPPER_MOTOR_MAX_TEMP)
 					|| (u8FCU_FLIGHTCTL_EDDY_BRAKES_GetStepMotorTemp(EDDYBRAKES_Right) > C_FCU__EDDYBRAKES_STEPPER_MOTOR_MAX_TEMP))
 
