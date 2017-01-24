@@ -29,9 +29,9 @@ extern struct _strFCU sFCU;
 #define C_FCU__GS_COMM_LOSS_DELAY	// should go in udp rx section
 #define C_FCU__POD_TARGET_POINT_MARGIN_POS
 #define C_FCU__POD_STOP_X_POS
-#define C_FCU__XXXXX_PODSPEED_STANDBY
-#define C_FCU__XXXXX_PODSPEED_MAX_SPEED_TO_STABILIZE
-#define C_FCU__XXXXX_PODSPEED_TOO_HIGH
+#define C_FCU__NAV_PODSPEED_STANDBY
+#define C_FCU__NAV_PODSPEED_MAX_SPEED_TO_STABILIZE
+#define C_FCU__NAV_PODSPEED_TOO_HIGH
 #define C_FCU__LIFTMECH_RETRACTED_MLP_DISTANCE
 #define C_FCU__LIFTMECH_ACTUATOR_NOM_UNLIFT_SPEED
 
@@ -91,9 +91,9 @@ case NET_PKT__FCU_GEN__POD_STOP_COMMAND:
 //vFCU_FLIGHTCTL_AUX_PROP__Stop()
 //vFCU_FLIGHTCTL_AUX_PROP__Disable()
 //vFCU_FLIGHTCTL_GIMBAL__SetLevel(GIMBAL_BACKWARD_LEVEL/GIMBAL_NEUTRAL_LEVEL/GIMBAL_FORWARD_LEVEL)
-//vFCU_FLIGHTCTL_XXXXXX__GetFrontPos()
+//vFCU_FLIGHTCTL_NAV__GetFrontPos()
 //vFCU_PUSHER__GetState()
-//u32FCU_FLIGHTCTL_XXXXX__PodSpeed()	// BORROWED FROM HOVER ENGINE CONTROL
+//u32FCU_FLIGHTCTL_NAV__PodSpeed()	// BORROWED FROM HOVER ENGINE CONTROL
 //vFCU_NET_RX__GetGsCommTimer()
 
 
@@ -134,8 +134,8 @@ void vFCU_FLIGHTCTL_PODDRIVE__Process(void)
 					{
 						vFCU_FLIGHTCTL_EDDY_BRAKES__Release();
 					}
-					u32PodSpeed = u32FCU_FLIGHTCTL_XXXXX__PodSpeed;
-					if (sFCU.sOpStates.u8Lifted && (u32PodSpeed < C_FCU__PODSPEED_STANDBY)))
+					u32PodSpeed = u32FCU_FLIGHTCTL_NAV__PodSpeed;
+					if (sFCU.sOpStates.u8Lifted && (u32PodSpeed < C_FCU__PODSPEED_STANDBY))
 					{
 						sFCU.sPodDrive.ePreRunState = PODDRIVE_PRERUN_START_HE_STATE;
 						sFCU.sPodDrive.u8100MS_Timer = 0;
@@ -215,8 +215,8 @@ void vFCU_FLIGHTCTL_PODDRIVE__Process(void)
 
 
 		case MISSION_PHASE__FLIGHT_MODE:
-			u32PodPos = u32FCU_FLIGHTCTL_XXXXXX__GetFrontPos();
-			u32PodSpeed = u32FCU_FLIGHTCTL_XXXXX__PodSpeed;
+			u32PodPos = u32FCU_FLIGHTCTL_NAV__GetFrontPos();
+			u32PodSpeed = u32FCU_FLIGHTCTL_NAV__PodSpeed;
 
 			if (sFCU.sPodDrive.eGSCommand == PODDRIVE_GS_POD_STOP;) || (u32PodSpeed > C_FCU__PODSPEED_TOO_HIGH) || (FCU watchdog failure)
 					|| (u8FCU_FLIGHTCTL_EDDY_BRAKES_GetStepMotorTemp(EDDYBRAKES_Left) > C_FCU__EDDYBRAKES_STEPPER_MOTOR_MAX_TEMP)
@@ -248,8 +248,8 @@ void vFCU_FLIGHTCTL_PODDRIVE__Process(void)
 			}
 			else
 			{
-				Luint32 u32PodPos = u32FCU_FLIGHTCTL_XXXXXX__GetFrontPos();
-				Luint32 u32PodSpeed = u32FCU_FLIGHTCTL_XXXXX__PodSpeed;
+				Luint32 u32PodPos = u32FCU_FLIGHTCTL_NAV__GetFrontPos();
+				Luint32 u32PodSpeed = u32FCU_FLIGHTCTL_NAV__PodSpeed;
 
 				vFCU_FLIGHTCTL_EDDY_BRAKES__ApplyFullBrakes();
 				if ((C_FCU__POD_STOP_X_POS - u32PodPos) > C_FCU__POD_TARGET_POINT_MARGIN_POS)
