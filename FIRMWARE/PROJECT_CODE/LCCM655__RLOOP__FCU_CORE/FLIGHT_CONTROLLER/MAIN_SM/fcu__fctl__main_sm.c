@@ -46,6 +46,7 @@ extern struct _strFCU sFCU;
 
 //u32FCU_FLIGHTCTL_NAV__PodSpeed();
 //u32FCU_FLIGHTCTL_NAV__GetFrontPos();
+//u32FCU_FLIGHTCTL_NAV__GetRearPos();
 //u32FCU_FLIGHTCTL_NAV__PodSpeed();
 //s16FCU_FLIGHTCTL_LASERORIENT__Get_Z_Pos()
 //u32LandingGearMLPLeftAftValue = u32FCU_LGU__Get_MLP_Value(Luint8 u8Counter);
@@ -194,6 +195,9 @@ void vFCU_FCTL_MAINSM__Process(void)
 	Luint8 u8Counter;
 	Luint8 u8Test;
 	Luint8 u8TestsSuccesful;
+	Lint32 s32Accelmmss;
+	Luint32 u32PodSpeed;
+	Luint8 u8PusherState;
 
 	//handle the state machine.
 	switch(sFCU.sStateMachine.eMissionPhase)
@@ -319,7 +323,9 @@ void vFCU_FCTL_MAINSM__Process(void)
 
 			//Transition to Pusher Interlock Phase based on the acceleration
 			//Not sure about how to call the right accelerometer and whether it indicates the right axis
-			if(sFCU.sAccel.sChannels[C_LOCALDEF__LCCM418__NUM_DEVICES].s32CurrentAccel_mmss > PODSPEED_STANDBY) 
+			s32Accelmmss = s32FCU_FCTL_NAV__Get_Accel_mmss();
+
+			if(s32Accelmmss > PODSPEED_STANDBY) 
 			{
 				sFCU.sStateMachine.eMissionPhase = MISSION_PHASE__PUSHER_INTERLOCK;
 			}
@@ -335,11 +341,11 @@ void vFCU_FCTL_MAINSM__Process(void)
 
 			//transition to FLIGHT mode if the pod has reached the min_x_pos AND 1 second elapsed from the disconnection from the pusher
 			
-			Luint8   PUSHER_STATE = u8FCU_PUSHER__Get_PusherState(void);
-			Luint32  POD_REAR_X_POS = u32FCU_FLIGHTCTL_NAV__GetFrontPos();
+			u8PusherState = u8FCU_PUSHER__Get_PusherState(void);
+			u32PodRearPos = u32FCU_FLIGHTCTL_NAV__GetRearPos();
 
 
-			if(PUSHER_STATE == 0U)
+			if(u8PusherState == 0U)
 			{
 				//Enable the counter
 				sFCU.sStateMachine.EnableCounter == 1U;
@@ -349,7 +355,7 @@ void vFCU_FCTL_MAINSM__Process(void)
 				//do nothing
 			}
 
-			if((POD_REAR_X_POS > POD_MIN_X_POS) && (sFCU.sStateMachine.Counter >= PUSHER_RELEASE_DELAY))
+			if((u32PodRearPos > POD_MIN_X_POS) && (sFCU.sStateMachine.Counter >= PUSHER_RELEASE_DELAY))
 			{
 				//Switch to Mission Phase Flight
 				sFCU.eMissionPhase = MISSION_PHASE__FLIGHT;
@@ -374,7 +380,7 @@ void vFCU_FCTL_MAINSM__Process(void)
 				vFCU_FLIGHTCTL__Process();
 			#endif
 
-			Luint32 u32PodSpeed = u32FCU_FLIGHTCTL_NAV__PodSpeed();
+			u32PodSpeed = u32FCU_FLIGHTCTL_NAV__PodSpeed();
 			
 			if(u32PodSpeed < PODSPEED_STANDBY)
 
@@ -395,7 +401,7 @@ void vFCU_FCTL_MAINSM__Process(void)
 		case MISSION_PHASE__POST_RUN:
 			//post run state
 
-			Luint32 u32PodSpeed = u32FCU_FLIGHTCTL_NAV__PodSpeed();
+			u32PodSpeed = u32FCU_FLIGHTCTL_NAV__PodSpeed();
 			void vFCU_FCTL_MAINSM__EnterPreRun_Phase(Luint32 u32Key)
 
 			if(u32PodSpeed < PODSPEED_STANDBY) && (sFCU.sStateMachine.eGSCommands == POST_RUN_TO_PRE_RUN)
@@ -483,6 +489,22 @@ void vFCU_FCTL_MAINSM__Process(void)
 		//process auto-sequence control
 		vFCU_FCTL_MAINSM_AUTO__Process();
 
+		//Check Operating States
+		vFCU_FCTL_MAINSM__CheckIfUnlifted();
+
+		vFCU_FCTL_MAINSM__CheckIfLifted();
+
+		vFCU_FCTL_MAINSM__CheckIfHoveringStatically();
+
+		vFCU_FCTL_MAINSM__CheckIfReadyForPush();
+
+		vFCU_FCTL_MAINSM__CheckIfPushing();
+
+		vFCU_FCTL_MAINSM__CheckIfCoasting();
+
+		vFCU_FCTL_MAINSM__CheckIfBraking();
+
+		vFCU_FCTL_MAINSM__CheckIfControlledBraking();
 	}
 	else
 	{
@@ -495,7 +517,7 @@ void vFCU_FCTL_MAINSM__Process(void)
 //allows us to enter pre-run phase from ethernet
 void vFCU_FCTL_MAINSM__EnterPreRun_Phase(Luint32 u32Key)
 {
-
+	sFCU.sStateMachine.eMissionPhase = MISSION_PHASE__PRE_RUN
 }
 
 void vFCU_FCTL_MAINSM__100MS_ISR(void)
@@ -520,9 +542,7 @@ void vFCU_FCTL_MAINSM__CheckIfUnlifted(void)
 
 	//Determine if Lifted
 
-	Luint32 u32PodZPos;
-
-	u32PodZPos = s32FCU_FLIGHTCTL_LASERORIENT__Get_Z_Pos();
+	Luint32 u32PodZPos = s32FCU_FLIGHTCTL_LASERORIENT__Get_Z_Pos();
 
 	if(u32PodZPos < C_FCU__LASERORIENT_MAX_UNLIFTED_HEIGHT)
 	{
@@ -538,9 +558,7 @@ void vFCU_FCTL_MAINSM__CheckIfLifted(void)
 {
 	//Determine if Unlifted
 
-	Luint32 u32PodZPos;
-
-	u32PodZPos = s32FCU_FLIGHTCTL_LASERORIENT__Get_Z_Pos();
+	Luint32	u32PodZPos = s32FCU_FLIGHTCTL_LASERORIENT__Get_Z_Pos();
 
 	if(u32PodZPos > C_FCU__LASERORIENT_MIN_LIFTED_HEIGHT)
 	{
@@ -571,15 +589,15 @@ void vFCU_FCTL_MAINSM__CheckIfReadyForPush(void)
 	//Determine if Ready for Push
 
 	//Get Pod Current Z Position
-	u32PodZPos = s16FCU_FLIGHTCTL_LASERORIENT__Get_Z_Pos();
+	Luint32 u32PodZPos = s16FCU_FLIGHTCTL_LASERORIENT__Get_Z_Pos();
 	//Get Current Pod Speed
-	u32PodSpeed = u32FCU_FLIGHTCTL_NAV__PodSpeed();
+	Luint32 u32PodSpeed = u32FCU_FLIGHTCTL_NAV__PodSpeed();
 
 	//Get values on checking the conditions for Pusher Interlock 
 	//Get Pusher Interlock Switch 1 Status
-	u8PusherSwitch1 = u8FCU_PUSHER__Get_Switch(0);
+	Luint8 u8PusherSwitch1 = u8FCU_PUSHER__Get_Switch(0);
 	//Get Pusher Interlock Switch 2 Status
-	u8PusherSwitch2 = u8FCU_PUSHER__Get_Switch(1);
+	Luint8 u8PusherSwitch2 = u8FCU_PUSHER__Get_Switch(1);
 
 	//Check if we are connected to the pusher, speed is below standby, the height makes sense to be pushed + each of our landing gear units is retracted
 	if((u32PodZPos > C_FCU_LASERORIENT_MIN_RUN_MODE_HEIGHT) &&  (u32PodSpeed < C_FCU__NAV_PODSPEED_STANDBY) && 	(u8PusherSwitch1 == 1U) && (u8PusherSwitch2 == 1U) && (vFCU_FLIGHTCTL_LIFTMECH__Get_State() == LIFT_MECH_STATE__RETRACTED))
@@ -595,9 +613,9 @@ void vFCU_FCTL_MAINSM__CheckIfReadyForPush(void)
 void vFCU_FCTL_MAINSM__CheckIfPushing(void)
 {
 	//Get Pusher Interlock Switch 1 Status
-	u8PusherSwitch1 = u8FCU_PUSHER__Get_Switch(0);
+	Luint8 u8PusherSwitch1 = u8FCU_PUSHER__Get_Switch(0);
 	//Get Pusher Interlock Switch 2 Status
-	u8PusherSwitch2 = u8FCU_PUSHER__Get_Switch(1);
+	Luint8 u8PusherSwitch2 = u8FCU_PUSHER__Get_Switch(1);
 
 	//Determine if in Pushing State
 	if(u32PodSpeed > C_FCU__NAV_MIN_PUSHER_SPEED && (u8PusherSwitch1 == 1U) && (u8PusherSwitch2 == 1U))
@@ -613,9 +631,9 @@ void vFCU_FCTL_MAINSM__CheckIfPushing(void)
 void vFCU_FCTL_MAINSM__CheckIfCoasting(void)
 {
 	//Get Pusher Interlock Switch 1 Status
-	u8PusherSwitch1 = u8FCU_PUSHER__Get_Switch(0);
+	Luint8 u8PusherSwitch1 = u8FCU_PUSHER__Get_Switch(0);
 	//Get Pusher Interlock Switch 2 Status
-	u8PusherSwitch2 = u8FCU_PUSHER__Get_Switch(1);
+	Luint8 u8PusherSwitch2 = u8FCU_PUSHER__Get_Switch(1);
 
 	//
 	if(u32PodSpeed && (u8PusherSwitch1 == 0U) && (u8PusherSwitch2 == 0U) && (vFCU_FLIGHTCTL_BRAKES__Get_State() == BRAKES_STATE__RETRACTED))
