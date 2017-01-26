@@ -206,6 +206,23 @@
 		/** FCU to Host, return pusher data */
 		NET_PKT__FCU_ASI__TX_PUSHER_DATA = 0x1801U,
 
+		//////////////////////////////////////////////////////
+		//FCU: AUTO SEQUENCE TESTS (0x1900)
+		//////////////////////////////////////////////////////
+
+		/** Host to FCU, request to control the auto sequence:
+		 * The control will be acheived by the 1 byte payload that
+		 * comes with this packet
+		 *
+		 * 1) Start	: 0x01
+		 * 2) Skip	: 0x02
+		 * 3) Kill	: 0x03
+		 * 4)
+		 * */
+		NET_PKT__FCU_AUTOSEQ_REQUEST_CONTROL = 0x1900,
+
+		/** FCU to Host, return the state name that completed running */
+		NET_PKT__FCU_AUTOSEQ_TX_STATE_COMPLETED = 0x1901,
 
 		//////////////////////////////////////////////////////
 		//POWER: GENERAL (0x3000)

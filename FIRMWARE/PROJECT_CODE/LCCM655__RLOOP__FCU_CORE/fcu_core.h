@@ -921,6 +921,7 @@
 			void vFCU_MAINSM_AUTO__Process(void);
 			Luint8 u8FCU_MAINSM_AUTO__Is_Busy(void);
 			Luint8 u8FCU_MAINSM_AUTO__Is_Abort(void);
+			Luint8 u8FCU_MAINSM_AUTO_Brakes_Init_Action(void);
 
 			//ethernet
 			void vFCU_FCTL_ETH__Init(void);
@@ -1055,6 +1056,8 @@
 		void vFCU_BRAKES__Process(void);
 		void vFCU_BRAKES__Begin_Init(Luint32 u32Key);
 		void vFCU_BRAKES__Move_IBeam_Distance_mm(Lfloat32 f32Distance);
+		Luint8 u8FCU_BRAKES__Is_Brake_Movement_Done(void);
+		Luint8 u8FCU_BRAKES__Is_Brake_Movement_Possible(void);
 		void vFCU_BRAKES__100MS_ISR(void);
 		void vFCU_BRAKES__10MS_ISR(void);
 		Lfloat32 f32FCU_BRAKES__Get_ScrewPos(E_FCU__BRAKE_INDEX_T eBrake);
@@ -1091,6 +1094,7 @@
 			#endif
 			void vFCU_BRAKES_MLP__ComputeCalibration_Zero(Luint32 u32Key, E_FCU__BRAKE_INDEX_T eBrake);
 			void vFCU_BRAKES_MLP__ComputeCalibration_Span(Luint32 u32Key, E_FCU__BRAKE_INDEX_T eBrake);
+			Lfloat32 f32FCU_BRAKES_MLP__Get_Brake_Position(E_FCU__BRAKE_INDEX_T eBrake);
 
 			//eth
 			void vFCU_BRAKES_ETH__Init(void);

@@ -209,6 +209,11 @@ RLOOP - FLIGHT CONTROL UNIT - CORE
 			/** Enable test phase */
 			#define C_LOCALDEF__LCCM655__ENABLE_FCTL_TEST_PHASE                 (1u)
 
+				/** Enable Limit switch accessbility in test phase */
+				#define C_LOCALDEF__LCCM655__ENABLE_FCTL_LIMIT_SWITCH_ACCESS		(1u)
+
+				/** Enable half way */
+				#define C_LOCALDEF__LCCM655__ENABLE_FCTL_BRAKES_HALFWAY_ACTUATION (0u)
 
 		/** ADC Sample Limits */
 		#define C_LOCALDEF__LCCM655__ADC_SAMPLE__LOWER_BOUND				(300U)

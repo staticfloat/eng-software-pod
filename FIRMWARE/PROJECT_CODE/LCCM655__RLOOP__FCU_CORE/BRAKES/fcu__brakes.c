@@ -448,6 +448,54 @@ void vFCU_BRAKES__Move_IBeam_Distance_mm(Lfloat32 f32Distance)
 
 /***************************************************************************//**
  * @brief
+ * Returns 1 if the requested brake movement is done
+ * Returns 0 if the requested brake movement is in progress
+ *
+ * @param[in]
+ * @st_funcMD5
+ * @st_funcID
+ */
+Luint8 u8FCU_BRAKES__Is_Brake_Movement_Done(void)
+{
+	Luint8 u8Return = 0; //Assume it is in progress
+
+	// If the brakes movement stopped
+	if (sFCU.sBrakesGlobal.eBrakeStates == BRAKE_STATE__IDLE
+			|| sFCU.sBrakesGlobal.eBrakeStates == BRAKE_STATE__MOVE_STOPPED)
+	{
+		// THEN, return 1 saying brake movment completed
+		u8Return = 1;
+	}
+
+	return u8Return;
+}
+
+/***************************************************************************//**
+ * @brief
+ * Returns 1 if the requested brake state machine will accept brake move request.
+ * Returns 0 if the requested brake state machine is busy and cannot take in
+ * new move requests
+ *
+ * @param[in]
+ * @st_funcMD5
+ * @st_funcID
+ */
+Luint8 u8FCU_BRAKES__Is_Brake_Movement_Possible(void)
+{
+	Luint8 u8Return = 0; //Assume it is in progress
+
+	// If the brakes movement stopped
+	if (sFCU.sBrakesGlobal.eBrakeStates == BRAKE_STATE__IDLE)
+	{
+		// THEN, return 1 saying brake movment completed
+		u8Return = 1;
+	}
+
+	return u8Return;
+}
+
+/***************************************************************************//**
+ * @brief
  * 100ms timer input
  * 
  * @st_funcMD5		49FEC7B1A6D39C29B063D402AE617167

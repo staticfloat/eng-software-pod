@@ -111,8 +111,8 @@
 
 		AUTOSEQ_STATE__TEST_FUNCTION_BRAKE_FULL_RETRACT_EXPECTED_RESULT,
 
+		/** New test go above this */
 		AUTOSEQ_STATE__TEST_DONE
-
 
 	}E_FCU__AUTO_SEQUENCE_STATE_T;
 
@@ -136,6 +136,9 @@
 
 		/** Kill the auto sequence test phase at any point during the test */
 		AUTOSEQ_TEST_KILL,
+
+		/** Reset the auto sequence test phase at any point during the test */
+		AUTOSEQ_TEST_RESET,
 
 	}E_FCU__AUTO_SEQUENCE_CONTROL_T;
 

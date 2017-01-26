@@ -535,6 +535,37 @@ void vFCU_BRAKES_MLP__ComputeCalibration_Span(Luint32 u32Key, E_FCU__BRAKE_INDEX
 	}
 }
 
+/***************************************************************************//**
+ * @brief
+ * Get the system span value.
+ *
+ * @example
+ * Brake_Pos = (ADCValue - Zero) * Span
+ *
+ * @param[in]		eBrake				The brake index
+ * @st_funcMD5
+ * @st_funcID
+ */
+Lfloat32 f32FCU_BRAKES_MLP__Get_Brake_Position(E_FCU__BRAKE_INDEX_T eBrake)
+{
+	Lfloat32 f32Return;
+
+	//protect the array
+	if((Luint32)eBrake < C_FCU__NUM_BRAKES)
+	{
+		//assign
+		f32Return = sFCU.sBrakes[(Luint32)eBrake].sMLP.f32BrakePosition_mm;
+
+	}
+	else
+	{
+		//error
+		//log this error
+	}
+	return f32Return;
+}
+
+
 #ifdef WIN32
 
 /***************************************************************************//**

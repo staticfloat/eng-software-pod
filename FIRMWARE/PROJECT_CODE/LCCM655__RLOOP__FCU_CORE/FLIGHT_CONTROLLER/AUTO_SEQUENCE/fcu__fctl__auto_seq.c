@@ -50,14 +50,22 @@ void vFCU_MAINSM_AUTO__Process(void)
 	Luint8 u8IsCalibrationDone;
 	Lfloat32 f32IBeam_Left_mm;
 	Lfloat32 f32IBeam_Right_mm;
+	Luint8 u8IsActionSuccessful;			// This will change in every action state
+	Luint8 u8IsSensorReadSuccessful;		// This will change in every sensor read state
+
+	// this is STATIC, BE CAREFUL. MAKE SURE YOU CLEAR IT ONCE THE USAGE IS DONE
+	// 0 -> not requested, 1 -> requested
+	static Luint8 u8IsActionRequested = 0;
 
 
+#if C_LOCALDEF__LCCM655__ENABLE_FCTL_LIMIT_SWITCH_ACCESS == 1u
 	E_FCU__SWITCH_STATE_T eSwitchState_Left_Extend;
 	E_FCU__SWITCH_STATE_T eSwitchState_Left_Retract;
 	E_FCU__SWITCH_STATE_T eSwitchState_Right_Extend;
 	E_FCU__SWITCH_STATE_T eSwitchState_Right_Retract;
+#endif // C_LOCALDEF__LCCM655__ENABLE_FCTL_LIMIT_SWITCH_ACCESS == 1
 
-	//hande the state machine.
+	//handle the state machine.
 	switch(sFCU.sAutoSequence.eAutoSeqState)
 	{
 
@@ -70,6 +78,8 @@ void vFCU_MAINSM_AUTO__Process(void)
 
 		case AUTOSEQ_STATE__IDLE:
 
+			// You either START or SKIP test phase here.
+			// The packet that controls eAutoSeqControl comes from GS.
 			switch(sFCU.sAutoSequence.eAutoSeqControl)
 			{
 				case AUTOSEQ_TEST_NOT_START:
@@ -118,25 +128,23 @@ void vFCU_MAINSM_AUTO__Process(void)
 
 		case AUTOSEQ_STATE__TEST_FUNCTION_BRAKES_INIT_ACTION:
 
-			// Initialize the variables to 0 before test
-			f32IBeam_Left_mm = 0.0;
-			f32IBeam_Right_mm = 0.0;
-
-			// Get the position of the left and right brake
-			f32IBeam_Left_mm = f32FCU_BRAKES__Get_IBeam_mm(FCU_BRAKE__LEFT);
-			f32IBeam_Right_mm = f32FCU_BRAKES__Get_IBeam_mm(FCU_BRAKE__RIGHT);
-
-			// If either brakes are not completely retracted
-			if((f32IBeam_Left_mm > C_FCU__BRAKES__MAX_IBEAM_DIST_UP_BOUND_MM)
-					|| (f32IBeam_Right_mm > C_FCU__BRAKES__MAX_IBEAM_DIST_UP_BOUND_MM))
+			// If we are in this state for the first time
+			if(u8IsActionRequested == 0)
 			{
-				// Then Retract both the brakes to fully retracted position
-				vFCU_BRAKES__Move_IBeam_Distance_mm(C_FCU__BRAKES__MAX_IBEAM_DIST_MM);
+				// THEN,
+				// Move the brakes to fully retract state
+				u8IsActionRequested = u8FCU_MAINSM_AUTO_Brakes_Init_Action();
+			}
+			else
+			{
+				// we have already made the request. Let's wait for the actuation to finish
+				u8IsActionSuccessful = u8FCU_BRAKES__Is_Brake_Movement_Done();
+				if (u8IsActionSuccessful == 1)
+				{
+					sFCU.sAutoSequence.eAutoSeqState = AUTOSEQ_STATE__TEST_FUNCTION_BRAKES_INIT_EXPECTED_RESULT;
+				}
 			}
 
-			// In any case, time to go to next state to see if the sensors give
-			// expected result from the above actuation
-			sFCU.sAutoSequence.eAutoSeqState = AUTOSEQ_STATE__TEST_FUNCTION_BRAKES_INIT_EXPECTED_RESULT;
 			break;
 
 		case AUTOSEQ_STATE__TEST_FUNCTION_BRAKES_INIT_EXPECTED_RESULT:
@@ -147,6 +155,7 @@ void vFCU_MAINSM_AUTO__Process(void)
 			// Check the retract limit switches for both left and right eddy brakes.
 			// If the upper state machine is working properly, then by the time we
 			// come here global switch states would have been updated
+#if C_LOCALDEF__LCCM655__ENABLE_FCTL_LIMIT_SWITCH_ACCESS == 1u
 			eSwitchState_Left_Retract = sFCU.sBrakes[FCU_BRAKE__LEFT].sLimits[BRAKE_SW__RETRACT].eSwitchState;
 			eSwitchState_Right_Retract = sFCU.sBrakes[FCU_BRAKE__RIGHT].sLimits[BRAKE_SW__RETRACT].eSwitchState;
 
@@ -154,15 +163,20 @@ void vFCU_MAINSM_AUTO__Process(void)
 			// switches are closed
 			if (eSwitchState_Left_Retract == SW_STATE__CLOSED && eSwitchState_Right_Retract == SW_STATE__CLOSED)
 			{
+#endif // C_LOCALDEF__LCCM655__ENABLE_FCTL_LIMIT_SWITCH_ACCESS == 1u
+
 				// Stepper motor, Limit switch and MLP show we are retracted.
 				// Let's go to next test case
 				sFCU.sAutoSequence.eAutoSeqState = AUTOSEQ_STATE__TEST_FUNCTION_BRAKE_HALF_WAY_ACTION;
+#if C_LOCALDEF__LCCM655__ENABLE_FCTL_LIMIT_SWITCH_ACCESS == 1u
 			}
 			else
 			{
 				// Stay here till time out happens
 				// todo Add a timeout here
 			}
+#endif // C_LOCALDEF__LCCM655__ENABLE_FCTL_LIMIT_SWITCH_ACCESS == 1u
+			break;
 
 		case AUTOSEQ_STATE__TEST_FUNCTION_BRAKE_HALF_WAY_ACTION:
 
@@ -465,6 +479,118 @@ Luint8 u8FCU_MAINSM_AUTO__Is_Busy(void)
 Luint8 u8FCU_MAINSM_AUTO__Is_Abort(void)
 {
 	return sFCU.sAutoSequence.u8IsAutoSequenceAbort;
+}
+
+/***************************************************************************//**
+ * @brief
+ * In the init action for brakes we move the brakes to fully retract position
+ *
+ * @return			1 = Action Successful, 0 = Action failed
+ * @st_funcMD5
+ * @st_funcID
+ */
+Luint8 u8FCU_MAINSM_AUTO_Brakes_Init_Action(void)
+{
+	Luint8 u8Return = 0;
+	Lfloat32 f32MLP_LeftBrakePosition_mm;
+	Lfloat32 f32MLP_RightBrakePosition_mm;
+	Luint8 u8Test = 0; // To check if a request was successful; 1-> success, 0 -> fail
+
+	// Initialize the variables to 0 before test
+	f32MLP_LeftBrakePosition_mm = 0.0;
+	f32MLP_RightBrakePosition_mm = 0.0;
+
+	// Get the position of the left and right brake
+	f32MLP_LeftBrakePosition_mm = f32FCU_BRAKES_MLP__Get_Brake_Position(FCU_BRAKE__LEFT);
+	f32MLP_RightBrakePosition_mm = f32FCU_BRAKES_MLP__Get_Brake_Position(FCU_BRAKE__RIGHT);
+
+	// If either brakes are not completely retracted
+	if((f32MLP_LeftBrakePosition_mm > C_FCU__BRAKES__MAX_IBEAM_DIST_UP_BOUND_MM)
+			|| (f32MLP_RightBrakePosition_mm > C_FCU__BRAKES__MAX_IBEAM_DIST_UP_BOUND_MM))
+	{
+
+		u8Test = u8FCU_BRAKES__Is_Brake_Movement_Possible();
+
+		// If brakes state machine can take new brake move requests
+		if(u8Test == 1)
+		{
+			// Then Retract both the brakes to fully retracted position
+			vFCU_BRAKES__Move_IBeam_Distance_mm(C_FCU__BRAKES__MAX_IBEAM_DIST_MM);
+
+			// Request made successfully
+			u8Return = 1;
+		}
+		else
+		{
+			// Can't make this request, brakes are busy,
+			// TRY AGAIN, NOT IMMEDIATELY, we will come here again from higher state machines
+			u8Return = 0;
+		}
+	}
+
+	return u8Return;
+}
+
+
+Luint8 u8FCU_MAINSM_AUTO_Brakes_Init_Is_Expected_Result(void)
+{
+	Luint8 u8Return = 0;
+#if C_LOCALDEF__LCCM655__ENABLE_FCTL_LIMIT_SWITCH_ACCESS == 1u
+	E_FCU__SWITCH_STATE_T eSwitchState_Left_Extend;
+	E_FCU__SWITCH_STATE_T eSwitchState_Left_Retract;
+	E_FCU__SWITCH_STATE_T eSwitchState_Right_Extend;
+	E_FCU__SWITCH_STATE_T eSwitchState_Right_Retract;
+#endif // C_LOCALDEF__LCCM655__ENABLE_FCTL_LIMIT_SWITCH_ACCESS == 1
+	Lfloat32 f32MLP_LeftBrakePosition_mm;
+	Lfloat32 f32MLP_RightBrakePosition_mm;
+
+	// Initialize the variables to 0 before test
+	f32MLP_LeftBrakePosition_mm = 0.0;
+	f32MLP_RightBrakePosition_mm = 0.0;
+
+	// In AUTOSEQ_STATE__TEST_FUNCTION_BRAKES_INIT_ACTUATION we moved the brakes
+	// to fully retracted if they were not there already.
+
+	// Get the position of the left and right brake
+	f32MLP_LeftBrakePosition_mm = f32FCU_BRAKES_MLP__Get_Brake_Position(FCU_BRAKE__LEFT);
+	f32MLP_RightBrakePosition_mm = f32FCU_BRAKES_MLP__Get_Brake_Position(FCU_BRAKE__RIGHT);
+
+	// Check the retract limit switches for both left and right eddy brakes.
+	// If the upper state machine is working properly, then by the time we
+	// come here global switch states would have been updated
+#if C_LOCALDEF__LCCM655__ENABLE_FCTL_LIMIT_SWITCH_ACCESS == 1u
+	eSwitchState_Left_Retract = sFCU.sBrakes[FCU_BRAKE__LEFT].sLimits[BRAKE_SW__RETRACT].eSwitchState;
+	eSwitchState_Right_Retract = sFCU.sBrakes[FCU_BRAKE__RIGHT].sLimits[BRAKE_SW__RETRACT].eSwitchState;
+
+	// Don't go to the next state until the brakes are retracted and limit
+	// switches are closed
+	if (eSwitchState_Left_Retract == SW_STATE__CLOSED && eSwitchState_Right_Retract == SW_STATE__CLOSED)
+	{
+#endif // C_LOCALDEF__LCCM655__ENABLE_FCTL_LIMIT_SWITCH_ACCESS == 1u
+
+		// If either brakes are not completely retracted
+		if((f32MLP_LeftBrakePosition_mm > C_FCU__BRAKES__MAX_IBEAM_DIST_UP_BOUND_MM)
+				&& (f32MLP_RightBrakePosition_mm > C_FCU__BRAKES__MAX_IBEAM_DIST_UP_BOUND_MM))
+		{
+			// Stepper motor, Limit switch and MLP show we are retracted.
+			// Let's go to next test case
+
+#if C_LOCALDEF__LCCM655__ENABLE_FCTL_BRAKES_HALFWAY_ACTUATION == 1
+			sFCU.sAutoSequence.eAutoSeqState = AUTOSEQ_STATE__TEST_FUNCTION_BRAKE_HALF_WAY_ACTION;
+#else
+			sFCU.sAutoSequence.eAutoSeqState = AUTOSEQ_STATE__TEST_FUNCTION_BRAKE_FULL_RETRACT_ACTION;
+#endif // C_LOCALDEF__LCCM655__ENABLE_FCTL_BRAKES_HALFWAY_ACTUATION == 1
+		}
+
+#if C_LOCALDEF__LCCM655__ENABLE_FCTL_LIMIT_SWITCH_ACCESS == 1u
+	}
+#endif // C_LOCALDEF__LCCM655__ENABLE_FCTL_LIMIT_SWITCH_ACCESS == 1u
+	else
+	{
+		//
+	}
+
+	return u8Return;
 }
 
 
