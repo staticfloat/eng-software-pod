@@ -501,7 +501,7 @@
 					{
 						Lfloat32 f32Position[3]; // x,y,z
 						Lfloat32 f32Measurement; // measurement returned from the distance laser
-						Luint8 u8Error; //Error value as read from fcu__laser_opto.c 
+						Luint8 u8Error; //Error value as read from fcu__laser_opto.c
 					}sGroundLasers[C_FCU__NUM_LASERS_GROUND];
 
 					/** sub-structure for beam lasers and their measurements*/
@@ -509,7 +509,7 @@
 					{
 						Lfloat32 f32Position[3]; // x,y,z
 						Lfloat32 f32Measurement; // measurement returned from the distance laser
-						Luint8 u8Error; //Error value as read from fcu__laser_opto.c 
+						Luint8 u8Error; //Error value as read from fcu__laser_opto.c
 					}sBeamLasers[C_FCU__NUM_LASERS_IBEAM];
 
 					/** sub-structure for hover engine positions and their hover heights*/
@@ -522,7 +522,7 @@
 					E_LASER_ORIENTATION__STATE_T eState;
 
 				}sOrient;
-				
+
 				#else
 					//Needed for compatibiltiy
 					Luint8 u8Dummy;
@@ -559,22 +559,59 @@
 				/** Accel, Veloc and Displacement blender system */
 				struct
 				{
-
-					/** The current working values we are using for flight */
+					// final value of accelleration
+					Lint32  s32Accel_mmss;
+					// final value of Velovity
+					Lint32  s32Veloc_mms;
+					// Final value of front Displacement
+					Lint32  s32Disp_mm;
+					// Temporary working values
 					struct
 					{
-						Lint32 s32Accel_mmss;
-						Lint32 s32Veloc_mms;
-						Lint32 s32Disp_mm;
-
+						Lint32  s32Accel_mmss;
+						Lint32  s32Veloc_mms;
+						Lint32  s32Disp_mm;
+						Luint32 u32TimeCounter;
+						Luint32 u32StarttransitionTime;
+						Luint8  u8LaserRangeFinder_Valid
 					}sWorking;
+
+					// Current values from sensors
+					//	typedef struct {
+					//		Luint32 u32Value;
+					//		Luint32 u32UpdateTime;
+					//	} E_BLENDER_MEASURES;
+					struct
+					{
+						// Velocity
+						struct
+						{
+							E_BLENDER_MEASURES sfromAccel;
+							E_BLENDER_MEASURES sfromLaser;
+							E_BLENDER_MEASURES sfromContrast;
+						} sVelocity_ms;
+						// Accelleration
+						struct
+						{
+							E_BLENDER_MEASURES sfromAccel;
+							E_BLENDER_MEASURES sfromLaser;
+							E_BLENDER_MEASURES sfromContrast;
+						} sAccelleration_mss;
+						// Displacement
+						struct
+						{
+							E_BLENDER_MEASURES sfromAccel;
+							E_BLENDER_MEASURES sfromLaser;
+							E_BLENDER_MEASURES sfromContrast;
+						} sDisplacement_m;
+					} sMeasurements;
 
 				}sBlender;
 
 			}sFlightControl;
 
 
-			
+
 
 			#if C_LOCALDEF__LCCM655__ENABLE_LASER_CONTRAST == 1U
 			/** Contrast sensor structure */
@@ -1291,4 +1328,3 @@
 		#error
 	#endif
 #endif //_FCU_CORE_H_
-

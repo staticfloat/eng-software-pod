@@ -2,6 +2,11 @@
 #ifndef RLOOP_LCCM655__RLOOP__FCU_CORE_FCU_CORE__TYPES_H_
 #define RLOOP_LCCM655__RLOOP__FCU_CORE_FCU_CORE__TYPES_H_
 
+	typedef struct {
+		Luint32 u32Value;
+		Luint32 u32UpdateTime;
+	} E_BLENDER_MEASURES;
+
 	/** Throttle control types */
 	typedef enum
 	{
