@@ -19,10 +19,12 @@
 		#include <LCCM653__RLOOP__POWER_CORE/power_core__state_types.h>
 		#include <LCCM653__RLOOP__POWER_CORE/power_core__defines.h>
 		#include <LCCM653__RLOOP__POWER_CORE/power_core__eeprom_index.h>
+		#include <LCCM653__RLOOP__POWER_CORE/power_core__enums.h>
 
 
 		//local fault flags
 		#include <LCCM653__RLOOP__POWER_CORE/power_core__fault_flags.h>
+		#include <LCCM653__RLOOP__POWER_CORE/CHARGER/IV_MEASURE/power__iv_measure__fault_flags.h>
 
 		#include <LCCM655__RLOOP__FCU_CORE/NETWORKING/fcu_core__net__packet_types.h>
 
@@ -44,6 +46,12 @@
 		{
 			//upper structure guarding
 			Luint32 u32Guard1;
+
+			/** The personality */
+			E_PWRNODE_TYPE_T ePersonality;
+
+			/** The ethernet port that we are transmitting from*/
+			Luint16 u16EthPort;
 
 			/** main state machine */
 			E_PWRNODE__RUN_STATES eMainState;
@@ -90,6 +98,9 @@
 
 				/** Is any new data available? */
 				Luint8 u8NewTempAvail;
+
+				/** Counter of number if times the temp sensor was scanned */
+				Luint32 u32TempScanCount;
 
 			}sTemp;
 
@@ -186,6 +197,49 @@
 			}sBMS;
 			#endif
 
+			/** LEM HASS 600-S Current Transducer **/
+			struct
+			{
+				/** Current Reading after converted from Voltage */
+				Lfloat32 f32HASS_CurrentReading;
+
+				/** Voltage Reading at Init **/
+				Lfloat32 f32HASS_VoltageOffSet;
+
+				/** Current Transducer Fault Flag */
+				FAULT_TREE__PUBLIC_T sFaultFlags;
+
+				Luint16 u16HAAS_Current_Average_Counter;
+				Lfloat32 f32HAAS_Current_Average_Array[C_PWRCORE__CURRENT_AVG_SIZE];
+
+			}sHASS600;
+
+			/** Cooling System **/
+			struct
+			{
+				/** Hover Engine Cooling Subsystem **/
+				struct
+				{
+					Lfloat32 f32Temperature;
+					E_PWRNODE__COOLING_STATES eState;
+					E_PWR__COOLING_HOVESOLENOID_STATE_T eHoverSolenoidState;
+				}sHoverEngineCoolingSystem[POWER_COOLING__MAX_HOVERENG];
+
+				/** Eddy Brake Cooling Subsystem **/
+				struct
+				{
+					Lfloat32 f32Temperature;
+					E_PWRNODE__COOLING_STATES eState;
+					E_PWR__COOLING_EDDYSOLENOID_STATE_T eEddySolenoidState;
+				}sEddyBrakeCoolingSystem[POWER_COOLING__MAX_EDDYBRAKES];
+
+				/** Cooling System Main State Mainchine */
+				E_PWRNODE__COOLING_T eMainState;
+
+				/** Count of 100ms */
+				Luint32 u32100MS_Count;
+			}sCooling;
+
 			/** Win32 Functions*/
 #ifdef WIN32
 			struct
@@ -234,6 +288,24 @@
 			}sUDPDiag;
 
 			#endif
+
+			/** PV Repress System */
+			struct
+			{
+
+				/** Repress state machine */
+				E_PWRNODE__REPRESS_T eState;
+
+				/** The solenoid state */
+				E_PWRNODE_REPRESS_SOL_STATE eSolState;
+
+				/** Count of 100ms */
+				Luint32 u32100MS_Count;
+
+				/** Pressure Value */
+				Lfloat32 f32Press;
+
+			}sRePress;
 
 			//lower structure guarding
 			Luint32 u32Guard2;
@@ -300,6 +372,8 @@
 		//charger current and voltage measurement
 		void vPWRNODE_CHG_IV__Init(void);
 		void vPWRNODE_CHG_IV__Process(void);
+		void vPWR_CHARGER_ETH__Init(void);
+		void vPWR_CHARGER_ETH__Transmit(E_NET__PACKET_T ePacketType);
 
 		//BMS interface layer
 		void vPWRNODE_BMS__Init(void);
@@ -313,9 +387,9 @@
 		void vPWRNODE_BMS__Balance_Manual(Luint8 u8CellIndex, Luint8 u8Enable);
 		Luint32 u32PWRNODE_BMS__Get_VoltsUpdateCount(void);
 
-			//eth
-			void vPWR_BMS_ETH__Init(void);
-			void vPWR_BMS_ETH__Transmit(E_NET__PACKET_T ePacketType);
+		//eth
+		void vPWR_BMS_ETH__Init(void);
+		void vPWR_BMS_ETH__Transmit(E_NET__PACKET_T ePacketType);
 
 
 
@@ -373,6 +447,28 @@
 		//PV repress system
 		void vPWR_PVPRESS__Init(void);
 		void vPWR_PVPRESS__Process(void);
+		void vPWR_PVPRESS__100MS_ISR(void);
+		void vPWR_PVPRESS__Enable(Luint32 u32Value);
+
+		//cooling system
+		void vPWR_COOLING__Init(void);
+		void vPWR_COOLING__Process(void);
+		void vPWR_COOLING__100MS_ISR(void);
+		void vPWR_COOLING__Enable(Luint32 u32Value);
+		void vPWR_COOLING__Solennoid_TurnAllOff(void);
+		void vPWR_COOLING__Solennoid_TurnOff(Luint32 u32PinNumber);
+		void vPWR_COOLING__Solennoid_TurnOn(Luint32 u32PinNumber);
+		void vPWR_COOLING_ETH__Transmit(E_NET__PACKET_T ePacketType);
+
+		//cooling hover subsystem
+		void vPWR_COOLING_HOVER__Init(void);
+		void vPWR_COOLING_HOVER__Process(void);
+
+		//cooling eddy subsystem
+		void vPWR_COOLING_EDDY__Init(void);
+		void vPWR_COOLING_EDDY__Process(void);
+		void vPWR_BMS_ETH__Init(void);
+		void vPWR_BMS_ETH__Transmit(E_NET__PACKET_T ePacketType);
 
 #ifdef WIN32
 		void vPWRNODE_WIN32__Init(void);

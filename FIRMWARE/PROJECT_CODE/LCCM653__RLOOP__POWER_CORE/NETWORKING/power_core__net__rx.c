@@ -59,8 +59,37 @@ void vPWRNODE_NET_RX__RxSafeUDP(Luint8 *pu8Payload, Luint16 u16PayloadLength, Lu
 	Luint32 u32Block[4];
 	Lfloat32 f32Block[4];
 
+
+	//hard coded hack for podsafe
+	if((u16DestPort == 9110U) || (u16DestPort == 9111U))
+	{
+		if(ePacketType == NET_PKT__PWR_GEN__POD_SAFE_COMMAND)
+		{
+			u32Block[0] = u32NUMERICAL_CONVERT__Array((const Luint8 *)pu8Payload);
+			if(u32Block[0] == 0x76543210U)
+			{
+				//Safe the pod
+				vPWRNODE_DC__Pod_Safe_Unlock(0xABCD1298U);
+				vPWRNODE_DC__Pod_Safe_Go();
+			}
+			else
+			{
+				//maybe should log this error.
+			}
+		}
+		else
+		{
+			//fall on, another packet type
+		}
+	}
+	else
+	{
+		//fall on.
+	}
+
+
 	//make sure we are rx'ing on our port number
-	if(u16DestPort == C_LOCALDEF__LCCM528__ETHERNET_PORT_NUMBER)
+	if(u16DestPort == sPWRNODE.u16EthPort)
 	{
 
 		//blocks are good for putting into functions
@@ -81,19 +110,11 @@ void vPWRNODE_NET_RX__RxSafeUDP(Luint8 *pu8Payload, Luint16 u16PayloadLength, Lu
 
 
 			case NET_PKT__PWR_GEN__POD_SAFE_COMMAND:
-				if(u32Block[0] == 0x75643210U)
-				{
-					//Safe the pod
-
-				}
-				else
-				{
-					//maybe should log this error.
-				}
+				//already done above
 				break;
 
 			case NET_PKT__PWR_GEN__POD_EMULATION_CONTROL:
-
+				//not implemented yet.
 				break;
 
 
@@ -102,7 +123,7 @@ void vPWRNODE_NET_RX__RxSafeUDP(Luint8 *pu8Payload, Luint16 u16PayloadLength, Lu
 				if(u32Block[0] == 0x11229988U)
 				{
 					//see if we want to enable charging.
-					if(u32Block[1] == 0x01)
+					if(u32Block[1] == 1U)
 					{
 						vPWRNODE_SM__Enable_ChargingState();
 					}
@@ -162,7 +183,7 @@ void vPWRNODE_NET_RX__RxSafeUDP(Luint8 *pu8Payload, Luint16 u16PayloadLength, Lu
 				break;
 
 			case NET_PKT__PWR_GEN__LATCH:
-
+				//latch the power on.
 				if(u32Block[0] == 0xABCD1245U)
 				{
 					if(u32Block[1] == 0U)
@@ -174,6 +195,56 @@ void vPWRNODE_NET_RX__RxSafeUDP(Luint8 *pu8Payload, Luint16 u16PayloadLength, Lu
 					{
 						//Power Node B
 						vPWRNODE_DC__Latch(0xABAB1122U);
+					}
+					else
+					{
+						//not valid
+					}
+				}
+				else
+				{
+					//invalid
+				}
+				break;
+
+			case NET_PKT__PWR_GEN__PV_REPRESS:
+				#if C_LOCALDEF__LCCM653__ENABLE_PV_REPRESS == 1U
+					vPWR_PVPRESS__Enable(u32Block[0]);
+				#endif
+				break;
+
+			case NET_PKT__PWR_GEN__COOLING:
+				#if C_LOCALDEF__LCCM653__ENABLE_COOLING == 1U
+					vPWR_COOLING__Enable(u32Block[0]);
+				#endif
+				break;
+
+			case NET_PKT__PWR_GEN__POWER_PERSONALITY:
+
+				//personality key
+				if(u32Block[0] == 0x11223344U)
+				{
+					if(u32Block[1] == 0U)
+					{
+						//Power Node A
+						vEEPARAM__WriteU32(C_POWERCORE__EEPARAM_INDEX__NODE_TYPE__TYPE_A, (Luint32)PWRNODE_TYPE__PACK_A, DELAY_T__DELAYED_WRITE);
+						vEEPARAM__WriteU32(C_POWERCORE__EEPARAM_INDEX__NODE_TYPE__TYPE_B, (Luint32)PWRNODE_TYPE__PACK_A, DELAY_T__IMMEDIATE_WRITE);
+
+						vEEPARAM_CRC__Calculate_And_Store_CRC(	C_POWERCORE__EEPARAM_INDEX__NODE_TYPE__TYPE_A,
+																C_POWERCORE__EEPARAM_INDEX__NODE_TYPE__TYPE_B,
+																C_POWERCORE__EEPARAM_INDEX__NODE_TYPE__TYPE_CRC);
+						sPWRNODE.ePersonality = PWRNODE_TYPE__PACK_A;
+					}
+					else if(u32Block[1] == 1U)
+					{
+						//Power Node B
+						vEEPARAM__WriteU32(C_POWERCORE__EEPARAM_INDEX__NODE_TYPE__TYPE_A, (Luint32)PWRNODE_TYPE__PACK_B, DELAY_T__DELAYED_WRITE);
+						vEEPARAM__WriteU32(C_POWERCORE__EEPARAM_INDEX__NODE_TYPE__TYPE_B, (Luint32)PWRNODE_TYPE__PACK_B, DELAY_T__IMMEDIATE_WRITE);
+
+						vEEPARAM_CRC__Calculate_And_Store_CRC(	C_POWERCORE__EEPARAM_INDEX__NODE_TYPE__TYPE_A,
+																C_POWERCORE__EEPARAM_INDEX__NODE_TYPE__TYPE_B,
+																C_POWERCORE__EEPARAM_INDEX__NODE_TYPE__TYPE_CRC);
+						sPWRNODE.ePersonality = PWRNODE_TYPE__PACK_B;
 					}
 					else
 					{
@@ -208,6 +279,12 @@ void vPWRNODE_NET_RX__RxSafeUDP(Luint8 *pu8Payload, Luint16 u16PayloadLength, Lu
 			case NET_PKT__PWR_TEMP__SET_USERDATA_INDEX:
 				#if C_LOCALDEF__LCCM653__ENABLE_BATT_TEMP == 1U
 					vPWRNODE_BATTEMP_MEM__Set_UserData(u32Block[0], u32Block[1], u32Block[2], u32Block[3]);
+				#endif
+				break;
+
+			case NET_PKT__PWR_COOLING__REQ_COOLING:
+				#if C_LOCALDEF__LCCM653__ENABLE_COOLING == 1U
+					sPWRNODE.sUDPDiag.eTxPacketType = NET_PKT__PWR_COOLING__TX_COOLING_STATUS;
 				#endif
 				break;
 

@@ -104,6 +104,7 @@
         ''' <param name="u32Block2"></param>
         ''' <param name="u32Block3"></param>
         Public Event UserEvent__SafeUDP__Tx_X4(eEndpoint As SIL3.rLoop.rPodControl.Ethernet.E_POD_CONTROL_POINTS, u16Type As UInt16, u32Block0 As UInt32, u32Block1 As UInt32, u32Block2 As UInt32, u32Block3 As UInt32)
+        Public Event UserEvent__SafeUDP__Tx_X3_Array(eEndpoint As SIL3.rLoop.rPodControl.Ethernet.E_POD_CONTROL_POINTS, u16Type As UInt16, u32Block0 As UInt32, u32Block1 As UInt32, u32Block2 As UInt32, pu8Array() As Byte, iArrayLength As Integer)
 
 #End Region '#Region "EVENTS"
 
@@ -133,7 +134,7 @@
             Me.m_iBarIndex = Me.m_pExplorer.Bar__Add("Flight Control")
             Me.m_pExplorer.SubItem__Add_LinkItem(Me.m_iBarIndex, "Mission")
             Me.m_pExplorer.SubItem__Add_LinkItem(Me.m_iBarIndex, "SpaceX Telemetry")
-            Me.m_pExplorer.SubItem__Add_LinkItem(Me.m_iBarIndex, "Fault Flags")
+            Me.m_pExplorer.SubItem__Add_LinkItem(Me.m_iBarIndex, "Pod Health + Fault Flags")
 
             Me.m_iBarIndex = Me.m_pExplorer.Bar__Add("Flight Subsystems")
             Me.m_pExplorer.SubItem__Add_LinkItem(Me.m_iBarIndex, "Accelerometers")
@@ -159,7 +160,7 @@
             Me.m_pnlFlight__SpaceX = New SIL3.rLoop.rPodControl.Panels.FlightControl.SpaceX("SpaceX Telemetry", Me.m_sLogDir)
             pf.Controls.Add(Me.m_pnlFlight__SpaceX)
 
-            Me.m_pnlFlight__FaultFlags = New SIL3.rLoop.rPodControl.Panels.FlightControl.Faults("Fault Flags", Me.m_sLogDir)
+            Me.m_pnlFlight__FaultFlags = New SIL3.rLoop.rPodControl.Panels.FlightControl.Faults("Pod Health + Fault Flags", Me.m_sLogDir)
             pf.Controls.Add(Me.m_pnlFlight__FaultFlags)
 
             Me.m_pnlFlight__Accel = New SIL3.rLoop.rPodControl.Panels.FlightControl.Accelerometers("Accelerometers", Me.m_sLogDir)
@@ -216,7 +217,8 @@
 
             AddHandler Me.m_pnlFlight__TrackDB_Create.UserEvent__SafeUDP__Tx_X4, AddressOf Me.InternalEvent__SafeUDP__Tx_X4
             AddHandler Me.m_pnlFlight__TrackDB_Monitor.UserEvent__SafeUDP__Tx_X4, AddressOf Me.InternalEvent__SafeUDP__Tx_X4
-	
+            AddHandler Me.m_pnlFlight__TrackDB_Monitor.UserEvent__SafeUDP__Tx_X3_Array, AddressOf Me.InternalEvent__SafeUDP__Tx_X3_Array
+
             AddHandler Me.m_pExplorer.LinkClick, AddressOf Me.LinkBar_LinkClick
 
         End Sub
@@ -289,6 +291,13 @@
         Private Sub InternalEvent__SafeUDP__Tx_X4(eEndpoint As SIL3.rLoop.rPodControl.Ethernet.E_POD_CONTROL_POINTS, u16Type As UInt16, u32Block0 As UInt32, u32Block1 As UInt32, u32Block2 As UInt32, u32Block3 As UInt32)
             RaiseEvent UserEvent__SafeUDP__Tx_X4(eEndpoint, u16Type, u32Block0, u32Block1, u32Block2, u32Block3)
         End Sub
+
+
+        Private Sub InternalEvent__SafeUDP__Tx_X3_Array(eEndpoint As SIL3.rLoop.rPodControl.Ethernet.E_POD_CONTROL_POINTS, u16Type As UInt16, u32Block0 As UInt32, u32Block1 As UInt32, u32Block2 As UInt32, pu8Array() As Byte, iArrayLength As Integer)
+            RaiseEvent UserEvent__SafeUDP__Tx_X3_Array(eEndpoint, u16Type, u32Block0, u32Block1, u32Block2, pu8Array, iArrayLength)
+        End Sub
+
+
 
 #End Region '#Region "ETHERNET TX"
 

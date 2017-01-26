@@ -26,7 +26,7 @@ extern struct _strFCU sFCU;
 
 /***************************************************************************//**
  * @brief
- * ToDo
+ * Init Eth
  * 
  * @st_funcMD5		28391E45A0FE140F795717C331017DDF
  * @st_funcID		LCCM655R0.FILE.077.FUNC.001
@@ -38,9 +38,9 @@ void vFCU_FCTL_ETH__Init(void)
 
 /***************************************************************************//**
  * @brief
- * ToDo
+ * Process FCU Eth
  * 
- * @param[in]		ePacketType		## Desc ##
+ * @param[in]		ePacketType				Packet Type
  * @st_funcMD5		602081C434EB3CDBD00C0ED2BFE3232D
  * @st_funcID		LCCM655R0.FILE.077.FUNC.002
  */
@@ -58,7 +58,7 @@ void vFCU_FCTL_ETH__Transmit(E_NET__PACKET_T ePacketType)
 	switch(ePacketType)
 	{
 		case NET_PKT__FCU_GEN__TX_MISSION_DATA:
-			u16Length = 6U;
+			u16Length = 11U;
 			break;
 
 
@@ -85,6 +85,15 @@ void vFCU_FCTL_ETH__Transmit(E_NET__PACKET_T ePacketType)
 				vNUMERICAL_CONVERT__Array_U16(pu8Buffer, (Luint16)sFCU.eMissionPhase);
 				pu8Buffer += 2U;
 
+				//current track database
+				pu8Buffer[0] = (Luint8)sFCU.sFlightControl.sTrackDB.u32CurrentDB;
+				pu8Buffer += 1U;
+
+				//pod health
+				vNUMERICAL_CONVERT__Array_U32(pu8Buffer, sFCU.sPodHealth.sHealthFlags.u32Flags[0]);
+				pu8Buffer += 4U;
+
+
 				break;
 
 			default:
@@ -95,8 +104,8 @@ void vFCU_FCTL_ETH__Transmit(E_NET__PACKET_T ePacketType)
 
 		//send it
 		vSAFEUDP_TX__Commit(u8BufferIndex, u16Length,
-							C_LOCALDEF__LCCM528__ETHERNET_PORT_NUMBER,
-							C_LOCALDEF__LCCM528__ETHERNET_PORT_NUMBER);
+				C_RLOOP_NET__FCU__PORT,
+							C_RLOOP_NET__FCU__PORT);
 
 	}//if(s16Return == 0)
 	else

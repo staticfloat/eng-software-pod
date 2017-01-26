@@ -80,6 +80,8 @@ Namespace SIL3.rLoop.rPodControl.Ethernet
         '/** FCU to Host, return laser data */
         NET_PKT__LASER_OPTO__TX_LASER_DATA = &H1101
 
+        '/** Set the laser height */
+        NET_PKT__LASER_OPTO__CAL_LASER_HEIGHT = &H1102
 
 
         '//////////////////////////////////////////////////////
@@ -204,7 +206,7 @@ Namespace SIL3.rLoop.rPodControl.Ethernet
         NET_PKT__FCU_ASI__REQUEST_PUSHER_DATA = &H1800
 
         '/** FCU to Host, return pusher data */
-        NET_PKT__FCU_ASI__TX_PUSHER_DATA = &H1801
+        NET_PKT__FCU_PUSH__TX_PUSHER_DATA = &H1801
 
 
         '//////////////////////////////////////////////////////

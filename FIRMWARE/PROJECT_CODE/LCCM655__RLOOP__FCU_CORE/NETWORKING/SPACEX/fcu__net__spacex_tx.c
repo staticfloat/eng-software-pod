@@ -22,6 +22,9 @@
 
 extern struct _strFCU sFCU;
 
+//locals
+Luint8 u8FCU_NET_SPACEX_TX__GeneratePodStatus(void);
+
 /***************************************************************************//**
  * @brief
  * Init the spaceX timed network transmission process
@@ -71,6 +74,7 @@ void vFCU_NET_SPACEX_TX__Process(void)
 	Lint16 s16Return;
 	Luint32 u32Buffer;
 	Luint8 *pu8Return;
+	Lint32 s32Temp;
 
 	//do we have a timer flag?
 	if(sFCU.sSpaceX.u8100MS_Flag == 1U)
@@ -98,18 +102,27 @@ void vFCU_NET_SPACEX_TX__Process(void)
 
 				//status 			UINT8 			Pod status, indicating current pod health and pushing state, as defined below. Required.
 				pu8Return[0] = 0x01U;
-				pu8Return += 1U;
+				pu8Return += u8FCU_NET_SPACEX_TX__GeneratePodStatus();
 
 				//acceleration 	INT32 			Acceleration in centimeters per second squared. Required.
-				vNUMERICAL_CONVERT__Array_S32(pu8Return, 1111);
+				s32Temp = s32FCU_FCTL_BLENDER__Get_Accel_mmss();
+				//convert to cm/ss
+				s32Temp /= 10;
+				vNUMERICAL_CONVERT__Array_S32(pu8Return, s32Temp);
 				pu8Return += 4U;
 
 				//position 		INT32 			Velocity in centimeters per second. Required.
-				vNUMERICAL_CONVERT__Array_S32(pu8Return, 22222);
+				s32Temp = s32FCU_FCTL_BLENDER__Get_Veloc_mms();
+				//convert to cm/ss
+				s32Temp /= 10;
+				vNUMERICAL_CONVERT__Array_S32(pu8Return, s32Temp);
 				pu8Return += 4U;
 
 				//velocity 		INT32 			Position in centimeters. Required.
-				vNUMERICAL_CONVERT__Array_S32(pu8Return, 33333);
+				s32Temp = s32FCU_FCTL_BLENDER__Get_Displacement_mm();
+				//convert to cm/ss
+				s32Temp /= 10;
+				vNUMERICAL_CONVERT__Array_S32(pu8Return, s32Temp);
 				pu8Return += 4U;
 
 				//battery_voltage 	INT32 			Battery voltage in millivolts.
@@ -162,6 +175,36 @@ void vFCU_NET_SPACEX_TX__Process(void)
 	}
 
 
+}
+
+
+/* 1.3. Determine pod status for SpaceX telemetry
+ * As required in section "Pod Monitoring Telemetry" of the Network Guide, the FCU shall compute the pod status as
+ * follows and report it to SpaceX telemetry:
+ *
+ * 0 (Fault): if mission phase is test phase and tests failed is true (see 11. Execute Internal and Functional Tests),
+ * or if mission phase is pre-run phase or pusher interlock phase and a fault is detected
+ * (As per network guide, the goal of this status is to abort the tube run if needed, therefore it not relevant to report it after Pusher Interlock phase)
+ *
+ * 2 (Ready): if mission phase is pre-run phase and ready for push state to true
+ *
+ * 3 (Pushing): if mission phase is pusher interlock phase and pushing state to true
+ * (Pushing state becoming false does not mean that brake interlock is released. To be released, the FCU must exit Pusher Interlock mission phase as described above.)
+ *
+ * 4 (Coast): if (mission phase is pusher interlock phase or flight phase) and coast state to true
+ *
+ * 5: (Braking): if (mission phase is flight phase or post-run phase) and braking state to true
+ *
+ * 1: (Idle): otherwise
+ *
+ */
+Luint8 u8FCU_NET_SPACEX_TX__GeneratePodStatus(void)
+{
+	Luint8 u8Return;
+
+	u8Return = 1;
+
+	return u8Return;
 }
 
 

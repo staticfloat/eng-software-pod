@@ -58,6 +58,7 @@ void vPWRNODE__Process(void)
 {
 
 	Luint8 u8Test;
+	Luint32 u32Test;
 
 	//handle the init states here
 	/**
@@ -87,6 +88,59 @@ void vPWRNODE__Process(void)
 
 			//setup flash memory access
 			vRM4_FLASH__Init();
+
+			//int the RM4's EEPROM
+			#if C_LOCALDEF__LCCM230__ENABLE_THIS_MODULE == 1U
+				vRM4_EEPROM__Init();
+			#endif
+
+			//init the EEPROM Params
+			#if C_LOCALDEF__LCCM188__ENABLE_THIS_MODULE == 1U
+				vEEPARAM__Init();
+			#endif
+
+			//not an ideal place, but we need our personality
+			u8Test = u8EEPARAM_CRC__Is_CRC_OK(	C_POWERCORE__EEPARAM_INDEX__NODE_TYPE__TYPE_A,
+												C_POWERCORE__EEPARAM_INDEX__NODE_TYPE__TYPE_B,
+												C_POWERCORE__EEPARAM_INDEX__NODE_TYPE__TYPE_CRC);
+			if(u8Test == 1U)
+			{
+				//we are good
+				u32Test = u32EEPARAM__Read(C_POWERCORE__EEPARAM_INDEX__NODE_TYPE__TYPE_A);
+				if(u32Test < (Luint32)PWRNODE_TYPE__PACK_MAX)
+				{
+					//Set the new personality
+					sPWRNODE.ePersonality = (E_PWRNODE_TYPE_T)u32Test;
+				}
+				else
+				{
+					//default
+					sPWRNODE.ePersonality = PWRNODE_TYPE__PACK_A;
+				}
+
+
+			}
+			else
+			{
+				//reload
+				vEEPARAM__WriteU32(C_POWERCORE__EEPARAM_INDEX__NODE_TYPE__TYPE_A, (Luint32)PWRNODE_TYPE__PACK_A, DELAY_T__DELAYED_WRITE);
+				vEEPARAM__WriteU32(C_POWERCORE__EEPARAM_INDEX__NODE_TYPE__TYPE_B, (Luint32)PWRNODE_TYPE__PACK_A, DELAY_T__IMMEDIATE_WRITE);
+
+				vEEPARAM_CRC__Calculate_And_Store_CRC(	C_POWERCORE__EEPARAM_INDEX__NODE_TYPE__TYPE_A,
+														C_POWERCORE__EEPARAM_INDEX__NODE_TYPE__TYPE_B,
+														C_POWERCORE__EEPARAM_INDEX__NODE_TYPE__TYPE_CRC);
+				sPWRNODE.ePersonality = PWRNODE_TYPE__PACK_A;
+			}
+
+			if(sPWRNODE.ePersonality == PWRNODE_TYPE__PACK_B)
+			{
+				sPWRNODE.u16EthPort = 9111U;
+			}
+			else
+			{
+				sPWRNODE.u16EthPort = 9110U;
+			}
+
 
 			//DMA
 			vRM4_DMA__Init();
@@ -235,6 +289,20 @@ void vPWRNODE__Process(void)
 			vRM4_ADC_USER__StartConversion();
 
 			//move state
+			sPWRNODE.sInit.eState = INIT_STATE__START_LOW_SYSTEM;
+			break;
+
+		case INIT_STATE__START_LOW_SYSTEM:
+
+			#if C_LOCALDEF__LCCM653__ENABLE_PV_REPRESS == 1U
+				vPWR_PVPRESS__Init();
+			#endif
+
+			#if C_LOCALDEF__LCCM653__ENABLE_COOLING == 1U
+				vPWR_COOLING__Init();
+			#endif
+
+			//move state
 			sPWRNODE.sInit.eState = INIT_STATE__RUN;
 			break;
 
@@ -287,6 +355,14 @@ void vPWRNODE__Process(void)
 				vPWRNODE_NODEPRESS__Process();
 			#endif
 
+			#if C_LOCALDEF__LCCM653__ENABLE_PV_REPRESS == 1U
+				vPWR_PVPRESS__Process();
+			#endif
+
+			#if C_LOCALDEF__LCCM653__ENABLE_COOLING == 1U
+				vPWR_COOLING__Process();
+			#endif
+
 			//process the main state machine
 			vPWRNODE_SM__Process();
 
@@ -333,6 +409,13 @@ void vPWRNODE__RTI_100MS_ISR(void)
 	#if C_LOCALDEF__LCCM653__ENABLE_DC_CONVERTER == 1U
 		//tell the DC/DC converter about us for pod safe command.
 		vPWRNODE_DC__100MS_ISR();
+	#endif
+
+	#if C_LOCALDEF__LCCM653__ENABLE_PV_REPRESS == 1U
+		vPWR_PVPRESS__100MS_ISR();
+	#endif
+	#if C_LOCALDEF__LCCM653__ENABLE_COOLING == 1U
+		vPWR_COOLING__100MS_ISR();
 	#endif
 
 }

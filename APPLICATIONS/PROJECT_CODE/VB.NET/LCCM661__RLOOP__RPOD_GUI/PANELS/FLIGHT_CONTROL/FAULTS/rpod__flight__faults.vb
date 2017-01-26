@@ -221,11 +221,29 @@
             Me.m_txtFaults(iIndex) = New SIL3.ApplicationSupport.TextBoxHelper_FaultFlags(100, l0(iIndex))
             iIndex += 1
 
-            For iCounter As Integer = 0 To 4 - 1
+            l0(iIndex) = New SIL3.ApplicationSupport.LabelHelper("Pod Health")
+            l0(iIndex).Layout__BelowControl(Me.m_txtFaults(iIndex - 5))
+            Me.m_txtFaults(iIndex) = New SIL3.ApplicationSupport.TextBoxHelper_FaultFlags(100, l0(iIndex))
+            Me.m_txtFaults(iIndex).Flags__Add("P0: BATTERY_PACK_TEMP_RANGE")
+            Me.m_txtFaults(iIndex).Flags__Add("P1: BATTERY_CELL_TEMP_RANGE")
+            Me.m_txtFaults(iIndex).Flags__Add("P2: BATTERY_VOLTAGE_RANGE")
+            Me.m_txtFaults(iIndex).Flags__Add("P3: BATTERY_CELL_VOLTAGE_RANGE")
+            Me.m_txtFaults(iIndex).Flags__Add("P4: BATTERY_CURRENT_RANGE")
+            Me.m_txtFaults(iIndex).Flags__Add("P5: HE_TEMP_RANGE")
+            Me.m_txtFaults(iIndex).Flags__Add("P6: HE_CURRENT_RANGE")
+            Me.m_txtFaults(iIndex).Flags__Add("P7: HE_VOLT_RANGE")
+            Me.m_txtFaults(iIndex).Flags__Add("P8: HE_RPM_RANGE")
+            Me.m_txtFaults(iIndex).Flags__Add("P9: PV_PRESS_RANGE")
+            Me.m_txtFaults(iIndex).Flags__Add("P10: PV_TEMP_RANGE")
+            iIndex += 1
+
+
+
+            For iCounter As Integer = 0 To 3 - 1
                 l0(iIndex) = New SIL3.ApplicationSupport.LabelHelper("Spare:" & iCounter & " Faults")
 
                 If iCounter = 0 Then
-                    l0(iIndex).Layout__BelowControl(Me.m_txtFaults(iIndex - 5))
+                    l0(iIndex).Layout__BelowControl(Me.m_txtFaults(iIndex - 1))
                 Else
                     l0(iIndex).Layout__AboveRightControl(l0(iIndex - 1), Me.m_txtFaults(iIndex - 1))
                 End If
@@ -235,7 +253,7 @@
 
             'flight controller
             l0(iIndex) = New SIL3.ApplicationSupport.LabelHelper("Flight Control - Top")
-            l0(iIndex).Layout__BelowControl(Me.m_txtFaults(iIndex - 4))
+            l0(iIndex).Layout__BelowControl(Me.m_txtFaults(iIndex - 3))
             Me.m_txtFaults(iIndex) = New SIL3.ApplicationSupport.TextBoxHelper_FaultFlags(100, l0(iIndex))
             iIndex += 1
 

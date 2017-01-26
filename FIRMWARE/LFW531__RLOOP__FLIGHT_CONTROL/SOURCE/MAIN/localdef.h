@@ -9,6 +9,8 @@
 	#endif
 
 
+
+
 /*******************************************************************************
 ETHERNET TRANSPORT
 *******************************************************************************/
@@ -69,7 +71,7 @@ SAFETY UDP LAYER
 		#define C_LOCALDEF__LCCM528__RX_CALLBACK(p,l,t,d,f)					vFCU_NET_RX__RxSafeUDP(p,l,t,d,f)
 
 		/** The one and only UDP port we can operate on */
-		#define C_LOCALDEF__LCCM528__ETHERNET_PORT_NUMBER					(9100U)
+		#define C_LOCALDEF__LCCM528__ETHERNET_PORT_NUMBER					(0U)
 		#define C_LOCALDEF__LCCM528__ETHERNET_PORT_NUMBER2					(0U)
 
 		/** Vision over SafeUDP Options */
@@ -159,13 +161,13 @@ RLOOP - FLIGHT CONTROL UNIT - CORE
 		#define C_LOCALDEF__LCCM655__ENABLE_LASER_DISTANCE					(1U)
 
 		/** Enable accel subsystem */
-		#define C_LOCALDEF__LCCM655__ENABLE_ACCEL							(1U)
+		#define C_LOCALDEF__LCCM655__ENABLE_ACCEL							(0U)
 
 		/** Enable the braking subsystems */
 		#define C_LOCALDEF__LCCM655__ENABLE_BRAKES							(1U)
 
 		/** Enable the throttle control */
-		#define C_LOCALDEF__LCCM655__ENABLE_THROTTLE						(1U)
+		#define C_LOCALDEF__LCCM655__ENABLE_THROTTLE						(0U)
 
 		/** Enable the ASI_RS485 */
 		#define C_LOCALDEF__LCCM655__ENABLE_ASI_RS485						(1U)
@@ -206,7 +208,10 @@ RLOOP - FLIGHT CONTROL UNIT - CORE
 			/** Track Database */
 			#define C_LOCALDEF__LCCM655__ENABLE_TRACK_DB						(1U)
 
-			/** Enable test phase */
+			/** Pod Health System */
+			#define C_LOCALDEF__LCCM655__ENABLE_POD_HEALTH						(1U)
+
+            /** Enable test phase */
 			#define C_LOCALDEF__LCCM655__ENABLE_FCTL_TEST_PHASE                 (1u)
 
 				/** Enable Limit switch accessbility in test phase */
@@ -214,6 +219,7 @@ RLOOP - FLIGHT CONTROL UNIT - CORE
 
 				/** Enable half way */
 				#define C_LOCALDEF__LCCM655__ENABLE_FCTL_BRAKES_HALFWAY_ACTUATION (0u)
+
 
 		/** ADC Sample Limits */
 		#define C_LOCALDEF__LCCM655__ADC_SAMPLE__LOWER_BOUND				(300U)

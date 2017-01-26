@@ -8,6 +8,70 @@
 #ifndef _POWER__STATE_TYPES_H_
 #define _POWER__STATE_TYPES_H_
 
+	/** Repress state machine */
+	typedef enum
+	{
+
+		/** Doing nothing*/
+		REPRESS_STATE__RESET = 0U,
+
+		/** Idle Phase, once we have been enabled */
+		REPRESS_STATE__IDLE,
+
+		/** Check the pressure sensor */
+		REPRESS_STATE__CHECK_PRESS_SNSR,
+
+		/** Process the pressure */
+		REPRESS_STATE__PROCESS_PRESS,
+
+		/** Fault condition */
+		REPRESS_STATE__FAULT
+
+	}E_PWRNODE__REPRESS_T;
+
+	/** Cooling system */
+	typedef enum
+	{
+		/** Do nothing */
+		COOLING_STATE__RESET = 0U,
+
+		/** Idle Phase, once we have been enabled */
+		COOLING_STATE__IDLE,
+
+		/** Hardware check to see if thermocouples are online */
+		COOLING_HARDWARE__CHECK,
+
+		/** Check the thermocouple temperature */
+		COOLING_STATE__CHECK_TEMPERATURES,
+
+		/** Process the temperature */
+		COOLING_STATE__PROCESS_TEMPERATURES,
+
+		/** Fault condition */
+		COOLING_STATE__FAULT
+	}E_PWRNODE__COOLING_T;
+
+
+	/** Solenoid State */
+	typedef enum
+	{
+		REPRESS_SOL_STATE__OFF = 0U,
+
+		REPRESS_SOL_STATE__ON
+
+	}E_PWRNODE_REPRESS_SOL_STATE;
+
+	/** Pack A or B */
+	typedef enum
+	{
+		PWRNODE_TYPE__PACK_A = 0U,
+
+		PWRNODE_TYPE__PACK_B,
+
+		PWRNODE_TYPE__PACK_MAX
+
+	}E_PWRNODE_TYPE_T;
+
 		/** Battery Temp Sensor Scan/load states */
 		typedef enum
 		{
@@ -31,7 +95,6 @@
 			BATT_TEMP_STATE__RUN
 
 		}E_BATT_TEMP__STATE_T;
-
 
 		/** Networking States*/
 		typedef enum
@@ -151,6 +214,9 @@
 
 			/** start the RTI subsystem */
 			INIT_STATE__START_TIMERS,
+
+			/** Start any lower level sytems */
+			INIT_STATE__START_LOW_SYSTEM,
 
 			/** Normal run state */
 			INIT_STATE__RUN

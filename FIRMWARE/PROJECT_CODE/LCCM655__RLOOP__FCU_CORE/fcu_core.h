@@ -337,7 +337,7 @@
 				E_FCU_PUSHER__STATES_T eState;
 
 				/** Interlock switch status */
-				Luint8 u8Pusher_Status;
+				E_FCU_PUSHPIN_STATE_T ePusher_Status;
 
 
 
@@ -432,6 +432,14 @@
 
 				}sOptoLaser[C_FCU__NUM_LASERS_OPTONCDT];
 
+				/** Calibration storage offset */
+				struct
+				{
+					/** The offset value */
+					Lfloat32 f32Offset;
+
+				}sCalibration[C_FCU__NUM_LASERS_OPTONCDT];
+
 			}sLaserOpto;
 			#endif //C_LOCALDEF__LCCM655__ENABLE_LASER_OPTONCDT
 
@@ -452,13 +460,19 @@
 				Luint8 u8NewPacket;
 
 				/** Array to hold new bytes received */
-				Luint8 u8NewByteArray[3];
+				Luint8 u8NewByteArray[5];
 
-				/** The most recent distance*/
-				Lfloat32 f32DistanceRAW;
+				/** The most recent distance in mm*/
+				Lint32 s32Distance_mm;
+
+				/** Previous distance of last sample */
+				Lint32 s32PrevDistance_mm;
+
+				Lint32 s32Velocity_mms;
+				Lint32 s32PrevVelocity_mms;
 
 				/** The final filtered distance*/
-				Lfloat32 f32DistanceFiltered;
+				//Lfloat32 f32DistanceFiltered;
 
 				/** New distance has been measured, other layer to clear it */
 				Luint8 u8NewDistanceAvail;
@@ -474,7 +488,7 @@
 					Luint32 u32EmuKey;
 
 					/** Emulated Distance */
-					Lfloat32 f32Distance;
+					Lint32 s32Distance;
 
 				}sEmu;
 
@@ -562,10 +576,34 @@
 				}sGeom;
 
 
+				/** Accel, Veloc and Displacement blender system */
+				struct
+				{
+
+					/** The current working values we are using for flight */
+					struct
+					{
+						Lint32 s32Accel_mmss;
+						Lint32 s32Veloc_mms;
+						Lint32 s32Disp_mm;
+
+					}sWorking;
+
+				}sBlender;
+
+
 			}sFlightControl;
 
 
-			
+			#if C_LOCALDEF__LCCM655__ENABLE_POD_HEALTH == 1U
+			struct
+			{
+
+				/** The flags indicating pod health */
+				FAULT_TREE__PUBLIC_T sHealthFlags;
+
+			}sPodHealth;
+			#endif
 
 			#if C_LOCALDEF__LCCM655__ENABLE_LASER_CONTRAST == 1U
 			/** Contrast sensor structure */
@@ -721,6 +759,23 @@
 			{
 				Luint32 u32Guard1;
 
+				/** the real time scan holding values */
+				struct
+				{
+					/** fault flags */
+					Luint16 u16Faults;
+
+					/** Temp in deg C*/
+					Lfloat32 f32TempC;
+
+					/** Motor Current */
+					Lfloat32 f32MotorCurrentA;
+
+					/** Current RPM */
+					Luint16 u16RPM;
+
+				}sHolding[C_FCU__NUM_HOVER_ENGINES];
+
 				/** The main state machine */
 				E_FCU__ASI_STATE_T eMainState;
 
@@ -752,6 +807,13 @@
 					/** On win32 generate save the mux */
 					Luint8 u8MuxChannel;
 				#endif
+
+				/** List of commands to send in round robbin*/
+				E_FCU_ASI_BAC_OBJECT_TYPES__T eCommandList[C_FCU__ASI_COMMAND_LIST_MAX];
+
+				/** Keep track of the command */
+				Luint8 u8CommandListIndex;
+
 
 				Luint32 u32Guard2;
 
@@ -853,6 +915,33 @@
 			}sLGU;
 			#endif //C_LOCALDEF__LCCM655__LGU_COMMS_SYSTEM
 
+			/** Critical info from the BMS */
+			struct
+			{
+				/** Highest cell temp */
+				Lfloat32 f32HighestTemp;
+
+				/** Average Temp cell (battery temp) */
+				Lfloat32 f32AverageTemp;
+
+				/** Total pack voltage */
+				Lfloat32 f32PackVoltage;
+
+				/** Highest cell voltage */
+				Lfloat32 f32HighestCellVoltage;
+
+				/** Lowest cell voltage */
+				Lfloat32 f32LowestCellVoltage;
+
+				/** PV Temp */
+				Lfloat32 f32PV_Temp;
+
+				/** PV Press */
+				Lfloat32 f32PV_Press;
+
+
+			}sBMS[2];
+
 			/** Structure guard 2*/
 			Luint32 u32Guard2;
 
@@ -877,11 +966,40 @@
 			void vFCU_FCTL_MAINSM__Init(void);
 			void vFCU_FCTL_MAINSM__Process(void);
 
+			//blender
+			void vFCU_FCTL_BLENDER__Init(void);
+			void vFCU_FCTL_BLENDER__Process(void);
+			Lint32 s32FCU_FCTL_BLENDER__Get_Accel_mmss(void);
+			Lint32 s32FCU_FCTL_BLENDER__Get_Veloc_mms(void);
+			Lint32 s32FCU_FCTL_BLENDER__Get_Displacement_mm(void);
+			void vFCU_FCTL_BLENDER__Veloc_UpdateFrom_Accel(Luint8 u8Channel, Luint32 u32Veloc_mms);
+			void vFCU_FCTL_BLENDER__Veloc_UpdateFrom_LRF(Luint8 u8Channel, Luint32 u32Veloc_mms);
+			void vFCU_FCTL_BLENDER__Veloc_UpdateFrom_Contrast(Luint8 u8Channel, Luint32 u32Veloc_mms);
+			void vFCU_FCTL_BLENDER__Accel_UpdateFrom_Accel(Luint8 u8Channel, Luint32 u32Accel_mmss);
+			void vFCU_FCTL_BLENDER__Accel_UpdateFrom_LRF(Luint8 u8Channel, Luint32 u32Accel_mmss);
+			void vFCU_FCTL_BLENDER__Accel_UpdateFrom_Contrast(Luint8 u8Channel, Luint32 u32Accel_mmss);
+			void vFCU_FCTL_BLENDER__Displacement_UpdateFrom_Accel(Luint8 u8Channel, Luint32 u32Disp_mm);
+			void vFCU_FCTL_BLENDER__Displacement_UpdateFrom_LRF(Luint8 u8Channel, Luint32 u32Disp_mm);
+			void vFCU_FCTL_BLENDER__Displacement_UpdateFrom_Contrast(Luint8 u8Channel, Luint32 u32Disp_mm);
+
 			//track DB
 			void vFCU_FCTL_TRACKDB__Init(void);
 			void vFCU_FCTL_TRACKDB__Process(void);
 			void vFCU_FCTL_TRACKDB__Set_CurrentDB(Luint32 u32Key, Luint32 u32TrackID);
-			DLL_DECLARATION Luint32 u32FCU_FCTL_TRACKDB__Get_CurrentDB(void);
+
+
+				//get functions
+				DLL_DECLARATION Luint32 u32FCU_FCTL_TRACKDB__Get_CurrentDB(void);
+				DLL_DECLARATION Luint32 u32FCU_FCTL_TRACKDB__Get_TrackID(void);
+				DLL_DECLARATION Luint32 u32FCU_FCTL_TRACKDB__Get_TrackStartPosX_mm(void);
+				DLL_DECLARATION Luint32 u32FCU_FCTL_TRACKDB__Get_Current_TrackEndPosX_mm(void);
+				DLL_DECLARATION Luint32 u32FCU_FCTL_TRACKDB__Get_LRF_StartPosX_mm(void);
+				DLL_DECLARATION Luint32 u32FCU_FCTL_TRACKDB__Get_NumStripes(void);
+				DLL_DECLARATION Luint32 u32FCU_FCTL_TRACKDB__Get_StripeStartPosX_mm(Luint32 u32StripeIndex);
+				DLL_DECLARATION Luint32 u32FCU_FCTL_TRACKDB__Get_EnableLRF(void);
+				DLL_DECLARATION Luint32 u32FCU_FCTL_TRACKDB__Get_EnableAccels(void);
+				DLL_DECLARATION Luint32 u32FCU_FCTL_TRACKDB__Get_EnableContrast(void);
+				DLL_DECLARATION Luint32 u32FCU_FCTL_TRACKDB__Get_GetFooter(void);
 
 				//mem
 				void vFCU_FCTL_TRACKDB_MEM__Init(void);
@@ -903,6 +1021,9 @@
 				DLL_DECLARATION void vFCU_FCTL_TRACKDB_WIN32__Set_LRF_StartXPos(Luint32 u32Value);
 				DLL_DECLARATION void vFCU_FCTL_TRACKDB_WIN32__Set_NumStripes(Luint32 u32Value);
 				DLL_DECLARATION void vFCU_FCTL_TRACKDB_WIN32__Set_StripeStartX(Luint32 u32Index, Luint32 u32Value);
+				DLL_DECLARATION void vFCU_FCTL_TRACKDB_WIN32__Set_EnableAccels(Luint32 u32Value);
+				DLL_DECLARATION void vFCU_FCTL_TRACKDB_WIN32__Set_EnableLRF(Luint32 u32Value);
+				DLL_DECLARATION void vFCU_FCTL_TRACKDB_WIN32__Set_EnableContrast(Luint32 u32Value);
 				DLL_DECLARATION void vFCU_FCTL_TRACKDB_WIN32__Set_HeaderSpare(Luint32 u32Index, Luint32 u32Value);
 				DLL_DECLARATION void vFCU_FCTL_TRACKDB_WIN32__Set_Footer(Luint32 u32Value);
 				DLL_DECLARATION void vFCU_FCTL_TRACKDB_WIN32__Set_Profile_PusherFrontStartPos(Luint32 u32Value);
@@ -927,6 +1048,9 @@
 			void vFCU_FCTL_ETH__Init(void);
 			void vFCU_FCTL_ETH__Transmit(E_NET__PACKET_T ePacketType);
 
+			//pod health
+			void vFCU_PODHEALTH__Init(void);
+			void vFCU_PODHEALTH__Process(void);
 
 			// Laser Orientation
 			void vFCU_FLIGHTCTL_LASERORIENT__Init(void);
@@ -954,6 +1078,7 @@
 		//network
 		void vFCU_NET__Init(void);
 		void vFCU_NET__Process(void);
+		void vFCU_NET_RX__Init(void);
 		Luint8 u8FCU_NET__Is_LinkUp(void);
 		void vFCU_NET_RX__RxUDP(Luint8 * pu8Buffer, Luint16 u16Length, Luint16 u16DestPort);
 		void vFCU_NET_RX__RxSafeUDP(Luint8 *pu8Payload, Luint16 u16PayloadLength, Luint16 ePacketType, Luint16 u16DestPort, Luint16 u16Fault);
@@ -1013,16 +1138,17 @@
 		//Laser distance
 		void vFCU_LASERDIST__Init(void);
 		void vFCU_LASERDIST__Process(void);
-		Lfloat32 f32FCU_LASERDIST__Get_Distance(void);
+		Lint32 s32FCU_LASERDIST__Get_Distance_mm(void);
+		Lint32 s32FCU_LASERDIST__Get_Velocity_mms(void);
 		void vFCU_LASERDIST__100MS_ISR(void);
 
-		DLL_DECLARATION void vFCU_LASERDIST_WIN32__Set_DistanceRaw(Lfloat32 f32Value);
+		DLL_DECLARATION void vFCU_LASERDIST_WIN32__Set_DistanceRaw(Lint32 s32Value);
 
 			//eth
 			void vFCU_LASERDIST_ETH__Init(void);
 			void vFCU_LASERDIST_ETH__Transmit(E_NET__PACKET_T ePacketType);
 			void vFCU_LASERDIST_ETH__Enable_EmulationMode(Luint32 u32Key, Luint32 u32Enable);
-			void vFCU_LASERDIST_ETH__Emulation_Injection(Lfloat32 f32Value);
+			void vFCU_LASERDIST_ETH__Emulation_Injection(Lint32 s32Value);
 
 			//filtering
 			void vFCU_LASERDIST_FILT__Init(void);
@@ -1034,6 +1160,7 @@
 		//lasers for OptoNCDT interface
 		void vFCU_LASEROPTO__Init(void);
 		void vFCU_LASEROPTO__Process(void);
+		void vFCU_LASEROPTO__Set_CalValue(Luint32 u32Key, Lfloat32 f32Offset);
 		Lfloat32 f32FCU_LASEROPTO__Get_Distance(E_FCU__LASER_OPTO__INDEX_T eLaser);
 		Luint8 u8FCU_LASEROPTO__Get_Error(E_FCU__LASER_OPTO__INDEX_T eLaser);
 		void vFCU_LASEROPTO__100MS_ISR(void);
@@ -1138,7 +1265,7 @@
 		Luint8 u8FCU_PUSHER__Get_InterlockB(void);
 		void vFCU_PUSHER__10MS_ISR(void);
 		Luint8 u8FCU_PUSHER__Get_Switch(Luint8 u8Switch);
-		Luint8 u8FCU_PUSHER__Get_PusherState(void);
+		E_FCU_PUSHPIN_STATE_T eFCU_PUSHER__Get_PusherState(void);
 
 			//eth
 			void vFCU_PUSHER_ETH__Init(void);

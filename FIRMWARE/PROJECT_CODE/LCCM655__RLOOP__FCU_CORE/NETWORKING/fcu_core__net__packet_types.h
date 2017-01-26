@@ -8,6 +8,11 @@
 #ifndef __NET__PACKET_TYPES_H_
 #define __NET__PACKET_TYPES_H_
 
+
+	#define C_RLOOP_NET__FCU__PORT						(9100U)
+	#define C_RLOOP_NET__POWER_A__PORT					(9110U)
+	#define C_RLOOP_NET__POWER_B__PORT					(9111U)
+
 	/** rLoop UDP network packet types
 	* http://confluence.rloop.org/display/SD/Packet+Types
 	*/
@@ -75,6 +80,8 @@
 		/** FCU to Host, return laser data */
 		NET_PKT__LASER_OPTO__TX_LASER_DATA = 0x1101U,
 
+		/** Set the laser height */
+		NET_PKT__LASER_OPTO__CAL_LASER_HEIGHT = 0x1102U,
 
 
 		//////////////////////////////////////////////////////
@@ -201,10 +208,10 @@
 		//////////////////////////////////////////////////////
 
 		/** Request from the host to send the pusher data */
-		NET_PKT__FCU_ASI__REQUEST_PUSHER_DATA = 0x1800U,
+		NET_PKT__FCU_PUSH__REQUEST_PUSHER_DATA = 0x1800U,
 
 		/** FCU to Host, return pusher data */
-		NET_PKT__FCU_ASI__TX_PUSHER_DATA = 0x1801U,
+		NET_PKT__FCU_PUSH__TX_PUSHER_DATA = 0x1801U,
 
 		//////////////////////////////////////////////////////
 		//FCU: AUTO SEQUENCE TESTS (0x1900)
@@ -246,6 +253,15 @@
 		/** Latch */
 		NET_PKT__PWR_GEN__LATCH = 0x3030U,
 
+		/** Power node personality */
+		NET_PKT__PWR_GEN__POWER_PERSONALITY = 0x3031U,
+
+		/** Power node repress system */
+		NET_PKT__PWR_GEN__PV_REPRESS = 0x3040U,
+
+		/** Power node cooling system */
+		NET_PKT__PWR_GEN__COOLING = 0x3041U,
+
 		//////////////////////////////////////////////////////
 		//POWER: TEMPERATURE SYSTEM (0x3200)
 		//////////////////////////////////////////////////////
@@ -286,6 +302,24 @@
 
 		/** Setup the charger values */
 		NET_PKT__PWR_BMS__SET_CHG_VALUES = 0x3402U,
+
+		//////////////////////////////////////////////////////
+		//POWER: COOLING SYSTEM (0x3600)
+		//////////////////////////////////////////////////////
+		/** Request a Cooling System packet */
+		NET_PKT__PWR_COOLING__REQ_COOLING = 0x3600U,
+
+		/** Send COOLING status */
+		NET_PKT__PWR_COOLING__TX_COOLING_STATUS = 0x3601U,
+
+		//////////////////////////////////////////////////////
+		//POWER: CURRENT SENSOR (0x3800)
+		//////////////////////////////////////////////////////
+		/** Request a Current Reading packet */
+		NET_PKT__PWR_CURRENT__REQ_CURRENT = 0x3800U,
+
+		/** Send Current Reading */
+		NET_PKT__PWR_CURRENT__TX_CURRENT_STATUS = 0x3801U,
 
 		//////////////////////////////////////////////////////
 		//DAQ (0x4000)

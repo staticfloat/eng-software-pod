@@ -17,19 +17,19 @@
 	typedef enum
 	{
 		/** Idle state */
-		ASI_COMM_STATE__IDLE = 0u,
+		ASI_COMM_STATE__IDLE = 0U,
 
 		/** Wait until slaves have time to process broadcast command */
-		ASI_COMM_STATE__WAIT_TURNAROUND_DELAY = 1u,
+		ASI_COMM_STATE__WAIT_TURNAROUND_DELAY,
 
 		/** Wait until hear back from slave after unicast command */
-		ASI_COMM_STATE__WAIT_REPLY = 2u,
+		ASI_COMM_STATE__WAIT_REPLY,
 
 		/** Receive state */
-		ASI_COMM_STATE__PROCESS_REPLY = 3u,
+		ASI_COMM_STATE__PROCESS_REPLY,
 
 		/** Process error */
-		ASI_COMM_STATE__PROCESS_ERROR = 4u
+		ASI_COMM_STATE__PROCESS_ERROR
 
 	} E_FCU_MODBUS__STATE_T;
 
@@ -232,9 +232,13 @@
 	/** Laser distance Rx states */
 	typedef enum
 	{
-		LASERDIST_RX__BYTE_1 = 0U,
+		LASERDIST_RX__BYTE_D = 0U,
+		LASERDIST_RX__BYTE_0,
+		LASERDIST_RX__BYTE_1,
 		LASERDIST_RX__BYTE_2,
-		LASERDIST_RX__BYTE_3
+		LASERDIST_RX__BYTE_3,
+		LASERDIST_RX__BYTE_4
+
 
 	}E_LASERDIST__RX_STATE_T;
 
@@ -357,6 +361,14 @@
 
 		}E_FCU_PUSHER__STATES_T;
 
+		/** Final pusher pin state */
+		typedef enum
+		{
 
+			PIN_FINAL_STATE__DISCONNECTED = 0U,
+			PIN_FINAL_STATE__CONNECTED,
+			PIN_FINAL_STATE__UNKNOWN
+
+		}E_FCU_PUSHPIN_STATE_T;
 
 #endif /* RLOOP_LCCM655__RLOOP__FCU_CORE_FCU_CORE__TYPES_H_ */

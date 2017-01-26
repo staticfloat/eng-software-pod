@@ -31,6 +31,7 @@ extern struct _strPWRNODE sPWRNODE;
  */
 void vPWRNODE_NET__Init(void)
 {
+
 	sPWRNODE.sEthernet.u810MS_Timer = 0U;
 	sPWRNODE.sEthernet.eMainState = NET_STATE__IDLE;
 
@@ -42,13 +43,27 @@ void vPWRNODE_NET__Init(void)
 	//PCB MAC
 	sPWRNODE.sEthernet.u8MACAddx[3] = 0x01;
 	sPWRNODE.sEthernet.u8MACAddx[4] = 0x00;
-	sPWRNODE.sEthernet.u8MACAddx[5] = 0x00;
+	if(sPWRNODE.ePersonality == PWRNODE_TYPE__PACK_A)
+	{
+		sPWRNODE.sEthernet.u8MACAddx[5] = 1U;
+	}
+	else
+	{
+		sPWRNODE.sEthernet.u8MACAddx[5] = 2U;
+	}
 
 	//IP
 	sPWRNODE.sEthernet.u8IPAddx[0] = 192;
 	sPWRNODE.sEthernet.u8IPAddx[1] = 168;
 	sPWRNODE.sEthernet.u8IPAddx[2] = 0;
-	sPWRNODE.sEthernet.u8IPAddx[3] = 110;
+	if(sPWRNODE.ePersonality == PWRNODE_TYPE__PACK_A)
+	{
+		sPWRNODE.sEthernet.u8IPAddx[3] = 110;
+	}
+	else
+	{
+		sPWRNODE.sEthernet.u8IPAddx[3] = 111;
+	}
 
 #ifndef WIN32
 	//init the EMAC via its link setup routine.
@@ -84,8 +99,6 @@ void vPWRNODE_NET__Process(void)
 
 	//process the ethernet layer.
 	vETHERNET__Process();
-
-
 
 
 	//hande our state machine for Tx
