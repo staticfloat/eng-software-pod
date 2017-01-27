@@ -670,9 +670,12 @@
 
 			}sFlightControl;
 
+			struct
+			{
+				E_FCU__COOLING_GS_COMM_T eGSCoolingCommand;
 
+			} sCoolingControl;
 			
-
 			#if C_LOCALDEF__LCCM655__ENABLE_LASER_CONTRAST == 1U
 			/** Contrast sensor structure */
 			struct

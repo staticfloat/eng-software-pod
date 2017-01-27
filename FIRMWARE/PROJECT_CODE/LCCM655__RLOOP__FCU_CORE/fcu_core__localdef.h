@@ -79,6 +79,9 @@ RLOOP - FLIGHT CONTROL UNIT - CORE
 			/** Allow us to control the gimbals and include in calculations */
 			#define C_LOCALDEF__LCCM655__ENABLE_GIMBAL_CONTROL					(1U)
 
+			/** Allow us to control the cooling system */
+			#define C_LOCALDEF__LCCM655__ENABLE_COOLING_CONTROL					(1U)
+
 			/** Track Database */
 			#define C_LOCALDEF__LCCM655__ENABLE_TRACK_DB						(1U)
 
