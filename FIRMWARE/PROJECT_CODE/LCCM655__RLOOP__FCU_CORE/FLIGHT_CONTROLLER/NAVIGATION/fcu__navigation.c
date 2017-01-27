@@ -38,9 +38,21 @@ static void vFCU_FLIGHTCTL_NAVIGATION__CalcLongitudenalAcceleration(void);
 #define C_FCU__NAVIGATION_STARTING_XPOS_LC_FWD
 #define C_FCU__NAVIGATION_STARTING_XPOS_LC_MID
 #define C_FCU__NAVIGATION_STARTING_XPOS_LC_AFT
-#define C_FCU__NAVIGATION_STARTING_XPOSUNCERT
+#define C_FCU__NAVIGATION_STRIPE_LENGTH
 #define C_FCU__NAVIGATION_STRIPE_DETECTION_NAVIGATION_DELAY
 #define C_FCU__NAVIGATION_X_POS_UNCERTAINTY_OFFSET
+#define C_FCU__NAVIGATION_MAX_X_POS_UNCERTAINTY
+#define C_FCU__NAVIGATION_PUSHER_START_XPOS
+#define C_FCU__NAVIGATION_POD_LENGTH
+#define C_FCU__NAVIGATION_LRF_MIN_POS_TO_ACTIVATE
+#define C_FCU__NAVIGATION_LRF_FIRST_EXPECTED_RANGE_MIN
+#define C_FCU__NAVIGATION_LRF_FIRST_EXPECTED_RANGE_MAX
+#define C_FCU__NAVIGATION_LRF_TRANSITION_DELAY_FROM_CONTRAST_SENSORS
+#define C_FCU__NAVIGATION_SPEED_UNCERTAINTY_OFFSET
+#define C_FCU__NAVIGATION_MAX_ACCELERATION
+#define C_FCU__NAVIGATION_ACCELEROMETER_HIGH_VAL_DELAY
+#define C_FCU__NAVIGATION_ACCELEROMETER_LOW_VAL_DELAY
+
 
 // TODO: add struct to fcu_core.h inside of _strFCU:
 #if C_LOCALDEF__LCCM655__ENABLE_PODDRIVE_CONTROL == 1U
@@ -50,20 +62,39 @@ struct
 	Luint32 u32StripeCount;
 	Luint32 u32Xpos;
 	Luint32 u32XPosUncert;
+	Luint32 u32NoseToSensorDist;
 	Luint32 u32Score;
 	Luint8 u8Valid;
 }sContrastSensor;
+
+
+struct
+{
+	Lfloat32 f32Accel;
+	Luint8 u8Valid;
+}sAccelerator;
 
 struct
 {
 	Lfloat32 f32LongitudenalPosition;
 	Lfloat32 f32PositionValidity;
+	Lfloat32 f32LongitudenalSpeed;
+	Lfloat32 f32LogintudenalSpeedUncertainty;
+	Luint8 u8LongitudenalSpeedValidity;
 	Lfloat32 f32LongitudenalAcceleration;
-	Lfloat32 f32LongitudenalAcceleration;
+	Luint8 u8LongitudenalAccelerationValidity;
 
 	Luint8 u8LRFAvailable;
 	Luint8 u8masterSensor;
+	Luint8 u8GeneralStripeCount;
 	sContrastSensor sCS[C_FCU__NAVIGATION_NUM_CONTRAST_SENSORS];
+	sAccelerator sAccel[C_LOCALDEF__LCCM418__NUM_DEVICES];
+	Luint32 u3210MSNavTimer;
+	Luint32 u3210MSLRFTimer;
+	Luint32 u3210MSAccelHiValTimer;
+	Luint32 u3210MSAccelLoValTimer;
+	Luint32 u3210MSDetectStripeTimer;
+	Luint32 u3210MSBetweenStripeTimer;
 
 }sNavigation;
 #endif
@@ -95,12 +126,15 @@ void vFCU_FLIGHTCTL_NAVIGATION__Init(void)
 	Luint8 u8LCIndex;
 
 	sFCU.sNavigation.f32LongitudenalPosition = 0; // distance along tube
+	sFCU.sNavigation.f32LongitudenalSpeed = 0; // velocity
+	sFCU.sNavigation.u8LongitudenalSpeedValidity = 1;
 	sFCU.sNavigation.f32LongitudenalAcceleration = 0; // acceleration
-	sFCU.sNavigation.f32LongitudenalVelocity = 0; // velocity
+	sFCU.sNavigation.u8LongitudenalAccelerationValidity = 1;
+
 
 	// TODO check if accelerometers are working?
 	
-
+	sFCU.sNavigation.u8GeneralStripeCount = 0;
 	sFCU.sNavigation.u8masterSensor = 0;
 	sFCU.sNavigation.f32PositionValidity = 1;
 	sFCU.sNavigation.u8LRFAvailable = 0;
@@ -108,24 +142,20 @@ void vFCU_FLIGHTCTL_NAVIGATION__Init(void)
 	// initialize each LC
 	for (u8LCIndex = 0; u8LCIndex < C_FCU__NAVIGATION_NUM_CONTRAST_SENSORS; u8LCIndex++)
 	{
-		if (sFCU.sNavigation.sLC[u8LCIndex] is in no stripe detection range )	// TODO
-		{
-			sFCU.sNavigation.sLC[u8LCIndex].u8Valid = 0;
-			// send alarm to GS;
-		}
-		else
-		{
-			sFCU.sNavigation.sLC[u8LCIndex].u8Valid = 1;
-		}
+		sFCU.sNavigation.sLC[u8LCIndex].u8Valid = 1;
 		sFCU.sNavigation.sLC[u8LCIndex].u32StripeCount = 0;
 		sFCU.sNavigation.sLC[u8LCIndex].u32Score = 0;
-		sFCU.sNavigation.sLC[u8LCIndex].u32XPosUncert = C_FCU__NAVIGATION_STARTING_XPOSUNCERT;
+		sFCU.sNavigation.sLC[u8LCIndex].u32XPosUncert = C_FCU__NAVIGATION_X_POS_UNCERTAINTY_OFFSET;
 	}
 	sFCU.sNavigation.sLC[0].u32Xpos = C_FCU__NAVIGATION_STARTING_XPOS_LC_FWD;
 	sFCU.sNavigation.sLC[1].u32Xpos = C_FCU__NAVIGATION_STARTING_XPOS_LC_MID;
 	sFCU.sNavigation.sLC[2].u32Xpos = C_FCU__NAVIGATION_STARTING_XPOS_LC_AFT;
 
+	sFCU.sNavigation.sLC[0].u32NoseToSensorDist = C_FCU__NAVIGATION_POD_LENGTH - C_FCU__NAVIGATION_STARTING_XPOS_LC_FWD;
+	sFCU.sNavigation.sLC[1].u32NoseToSensorDist = C_FCU__NAVIGATION_POD_LENGTH - C_FCU__NAVIGATION_STARTING_XPOS_LC_MID;
+	sFCU.sNavigation.sLC[2].u32NoseToSensorDist = C_FCU__NAVIGATION_POD_LENGTH - C_FCU__NAVIGATION_STARTING_XPOS_LC_AFT;
 
+	sFCU.sNavigation.u3210MSNavTimer = 0;
 	// initialise arrays for filtering purposes
 	sFCU.sNavigation.f32AccelerationArray[ACCELERATION_ARRAY_SIZE] = {0};
 
@@ -139,208 +169,286 @@ void vFCU_FLIGHTCTL_NAVIGATION__Init(void)
  */
 void vFCU_FLIGHTCTL_NAVIGATION__Process(void)
 {
-	vFCU_FLIGHTCTL_NAVIGATION__CalcLongitudenalPosition();
-	vFCU_FLIGHTCTL_NAVIGATION__CalcSpeed();
-	vFCU_FLIGHTCTL_NAVIGATION__CalcAcceleration();
-
+	if (sFCU.sNavigation.u3210MSNavTimer > 3)	// calculate every 30 ms
+	{
+		vFCU_FLIGHTCTL_NAVIGATION__CalcAcceleration();
+		vFCU_FLIGHTCTL_NAVIGATION__CalcLongitudenalPositionAndSpeed();
+		sFCU.sNavigation.u3210MSNavTimer = 0;
+	}
 }
 
-/** The longitudenal position down the tube */
-/*
-input
-=====							
-contrast sensor 1 value
-contrast sensor 2 value
-contrast sensor 3 value
-laser range finder value
-speed
-speed uncertainty
-speed validity
-*/
+Luint8 searchStripsInRange(Luint8 u8LC)
+{
+	Luint8 u8Index;
+	Luint32 u32xPosStart;
+	Luint32 u32xPosEnd;
+	Luint32 u32Dist;
+	Luint8 u8Min=54;
+	Luint32 u32CurStripeCount = sFCU.sNavigation.u8GeneralStripeCount;
 
-/*
-output
-======
-front x position (x position of pod nose in the tube)
-rear x position (x position of pod pusher plate in the tube)
-x position validity
-*/
+	for (u8Index = u32CurStripeCount; u8Index < 54; u8Index ++)
+	{
+		u32xPosStart=sFCU.sNavigation.f32LongitudenalPosition - sFCU.sNavigation.sCS[u8LC].u32XPosUncert;
+		u32xPosEnd=sFCU.sNavigation.f32LongitudenalPosition + sFCU.sNavigation.sCS[u8LC].u32XPosUncert;
+		u32Dist = sFCU.sContrast.sTrackDatabase[u8LC].u32DistanceElapsed_mm[u8Index];
+		if (u32Dist > u32xPosStart) && (u32Dist < u32xPosEnd)
+		{
+			return u8Index;
+		}
+	}
+	return 0;
+}
 
-void vFCU_FLIGHTCTL_NAVIGATION__CalcLongitudenalPosition(void)
+Luint8 findDetectStripeMode(Luint8 u8LC)
+{
+	//TODO:  call lower level module
+}
+
+void vFCU_FLIGHTCTL_NAVIGATION__ContrastSensor_Distance(void)
 {
 	Luint8 u8LCIndex;
 	Luint32 u32xPosIndex;
 	Luint32 u32xPosStart;
 	Luint32 u32xPosEnd;
+	Luint8 u8ExpectedStripeNum;
+	Luint8 u8DetectedStripMode;
+	Lfloat32 f32speedSt;
+	Lfloat32 f32speedAc;
 
-	if (sFCU.sNavigation.u8LRFAvailable == 1U)
+	for (u8LCIndex = 0; u8LCIndex < C_FCU__NAVIGATION_NUM_CONTRAST_SENSORS; u8LCIndex++)
 	{
-		// laser range finder available
+		E_FCU__LASER_CONT_INDEX_T u8LC = Get_LC_Enum(u8LCIndex);
+		u8ExpectedStripeNum = searchStripsInRange(u8LCIndex);
+		u8DetectedStripMode = findDetectStripeMode(u8LCIndex);
 
-	}
-	else
-	{
-		for (u8LCIndex = 0; u8LCIndex < C_FCU__NAVIGATION_NUM_CONTRAST_SENSORS; u8LCIndex++)
+		if (u8DetectedStripMode)
 		{
-			E_FCU__LASER_CONT_INDEX_T u8LC = Get_LC_Enum(u8LCIndex);
-			u32xPosStart=sFCU.sNavigation.sCS[u8LCIndex].u32Xpos - sFCU.sNavigation.sCS[u8LCIndex].u32XPosUncert;
-			u32xPosEnd=sFCU.sNavigation.sCS[u8LCIndex].u32Xpos + sFCU.sNavigation.sCS[u8LCIndex].u32XPosUncert;
-			for (u32xPosIndex=u32xPosStart; u32xPosIndex < u32xPosEnd; u32xPosEnd++)
+			// detected stripe
+			sFCU.sNavigation.u3210MSBetweenStripeTimer = 0;
+			if (u8ExpectedStripeNum)
 			{
-				if (stripesLocTable[u32xPosIndex].nStripes)
-				{
-					// expected a stripe at this position
-					// TODO:  not sure how this table is organized so difficult to tell
-					//        how to get values
-					sFCU.sNavigation.sCS[u8LCIndex].u32Xpos = stripesLocTable[u32xPosIndex].stripePos;
-					sFCU.sNavigation.sCS[u8LCIndex].u32XPosUncert = C_FCU__NAVIGATION_X_POS_UNCERTAINTY_OFFSET;
-				}
+				sFCU.sNavigation.sCS[u8LCIndex].u32StripeCount = u8ExpectedStripeNum;
+				sFCU.sNavigation.sCS[u8LCIndex].u32Xpos = sFCU.sContrast.sTrackDatabase[u8LC].u32DistanceElapsed_mm[u8ExpectedStripeNum];
+				sFCU.sNavigation.sCS[u8LCIndex].u32XPosUncert = C_FCU__NAVIGATION_X_POS_UNCERTAINTY_OFFSET;
+				f32speedSt = C_FCU__NAVIGATION_STRIPE_LENGTH/sFCU.sNavigation.u3210MSDetectStripeTimer;
+				sFCU.sNavigation.f32LongitudenalSpeed = f32speedSt;
+				sFCU.sNavigation.f32LogintudenalSpeedUncertainty = C_FCU__NAVIGATION_SPEED_UNCERTAINTY_OFFSET;
 			}
-			if (stripe detection mode)	//TODO
+			else
 			{
-				// detected stripe
-				if (stripe expected)	//TODO
-				{
-					sFCU.sNavigation.sCS[u8LCIndex].u32StripeCount++;
-					sFCU.sNavigation.sCS[u8LCIndex].u32Xpos = stripe pos in DB; //TODO
-					sFCU.sNavigation.sCS[u8LCIndex].u32XPosUncert = 0;
-				}
-				else
-				{
-					sFCU.sNavigation.sCS[u8LCIndex].u32Xpos increment; //TODO from speed
-					sFCU.sNavigation.sCS[u8LCIndex].u32XPosUncert increment; //TODO from speed
-					sFCU.sNavigation.sCS[u8LCIndex].u32Score--;
-				}
-			}
-			else if (stripe expected)	//TODO
-			{
-				// expected but not detected
-				sFCU.sNavigation.sCS[u8LCIndex].u32Xpos increment; //TODO from speed
-				sFCU.sNavigation.sCS[u8LCIndex].u32XPosUncert increment; //TODO from speed
+				// stripe not expected here
+				sFCU.sNavigation.f32LongitudenalSpeed += sFCU.sNavigation.f32LongitudenalAcceleration * sFCU.sNavigation.sFCU.sNavigation.u3210MSNavTimer;
+				sFCU.sNavigation.sCS[u8LCIndex].u32Xpos += sFCU.sNavigation.f32LongitudenalSpeed * sFCU.sNavigation.sFCU.sNavigation.u3210MSNavTimer;
+				//sFCU.sNavigation.sCS[u8LCIndex].u32XPosUncert = ; //TODO
 				sFCU.sNavigation.sCS[u8LCIndex].u32Score--;
 			}
-			if (detected signal too long || sCS[u8LCIndex].u32XPosUncert > 100ft ) //TODO
-			{
-				sFCU.sNavigation.sCS[u8LCIndex].u8Valid = 0;
-			}
-			else
-			{
-				sFCU.sNavigation.sCS[u8LCIndex].u8Valid = 1;
-			}
 		}
+		else if (u8ExpectedStripeNum)
+		{
+			// expected but not detected
+			sFCU.sNavigation.u3210MSDetectStripeTimer = 0;
+			sFCU.sNavigation.f32LongitudenalSpeed += sFCU.sNavigation.f32LongitudenalAcceleration * sFCU.sNavigation.sFCU.sNavigation.u3210MSNavTimer;
+			sFCU.sNavigation.sCS[u8LCIndex].u32Xpos += sFCU.sNavigation.f32LongitudenalSpeed * sFCU.sNavigation.sFCU.sNavigation.u3210MSNavTimer;
+			//sFCU.sNavigation.sCS[u8LCIndex].u32XPosUncert = ; //TODO
+			sFCU.sNavigation.sCS[u8LCIndex].u32Score--;
+		}
+		if (sFCU.sNavigation.u3210MSDetectStripeTimer > C_FCU__NAVIGATION_STRIPE_DETECTION_NAVIGATION_DELAY ||
+				sFCU.sNavigation.sCS[u8LCIndex].u32XPosUncert > C_FCU__NAVIGATION_MAX_X_POS_UNCERTAINTY )
+		{
+			sFCU.sNavigation.sCS[u8LCIndex].u8Valid = 0;
+		}
+		else
+		{
+			sFCU.sNavigation.sCS[u8LCIndex].u8Valid = 1;
+		}
+	}
 
-		// set x pos based on current master sensor
-		sFCU.sNavigation.f32LongitudenalPosition = sFCU.sNavigation.sCS[sFCU.sNavigation.u8masterSensor].u32Xpos;
+	// set x pos based on current master sensor
+	sFCU.sNavigation.f32LongitudenalPosition = sFCU.sNavigation.sCS[sFCU.sNavigation.u8masterSensor].u32Xpos +
+			sFCU.sNavigation.sCS[sFCU.sNavigation.u8masterSensor].u32NoseToSensorDist;
 
-		// determine new master sensor
-		Luint32 maxScore=sFCU.sNavigation.sCS[0].u32Score;
-		Luint32 same = 0;
-		sFCU.sNavigation.u8masterSensor = 0;
+	// see laser finder range becomes active
+	if (sFCU.sNavigation.u8LRFAvailable == 0U &&
+			sFCU.sNavigation.f32LongitudenalPosition >= C_FCU__NAVIGATION_LRF_MIN_POS_TO_ACTIVATE &&
+			f32FCU_LASERDIST__Get_Distance() >= C_FCU__NAVIGATION_LRF_FIRST_EXPECTED_RANGE_MIN &&
+			f32FCU_LASERDIST__Get_Distance() <= C_FCU__NAVIGATION_LRF_FIRST_EXPECTED_RANGE_MAX)
+	{
+		sFCU.sNavigation.u8LRFAvailable = 1U;
+		sFCU.sNavigation.u3210MSLRFTimer = 0;
+	}
+
+	sFCU.sNavigation.u8GeneralStripeCount = sFCU.sNavigation.sCS[sFCU.sNavigation.u8masterSensor].u32StripeCount;
+
+	// determine new master sensor
+	Luint32 maxScore=sFCU.sNavigation.sCS[0].u32Score;
+	Luint32 same = 0;
+	sFCU.sNavigation.u8masterSensor = 0;
+	for (u8LCIndex = 1; u8LCIndex < C_FCU__NAVIGATION_NUM_CONTRAST_SENSORS; u8LCIndex++)
+	{
+		// figure out sensor with highest score
+		if (sFCU.sNavigation.sCS[u8LCIndex].u32Score > maxScore)
+		{
+			maxScore = sFCU.sNavigation.sCS[u8LCIndex].u32Score;
+			sFCU.sNavigation.u8masterSensor = u8LCIndex;
+			same = 0;
+		}
+		else if (sFCU.sNavigation.sCS[u8LCIndex].u32Score == maxScore)
+		{
+			same = 1;
+		}
+		else
+		{
+			same = 0;
+		}
+	}
+	if (same = 0)
+	{
+		// figure out sensor with least uncertainty
+		Luint32 minUncert=sFCU.sNavigation.sCS[0].u32XPosUncert;
 		for (u8LCIndex = 1; u8LCIndex < C_FCU__NAVIGATION_NUM_CONTRAST_SENSORS; u8LCIndex++)
 		{
-			// figure out sensor with highest score
-			if (sFCU.sNavigation.sCS[u8LCIndex].u32Score > maxScore)
+			if (sFCU.sNavigation.sCS[u8LCIndex].u32XPosUncert < minUncert)
 			{
-				maxScore = sFCU.sNavigation.sCS[u8LCIndex].u32Score;
+				minUncert = sFCU.sNavigation.sCS[u8LCIndex].u32XPosUncert
 				sFCU.sNavigation.u8masterSensor = u8LCIndex;
-				same = 0;
-			}
-			else if (sFCU.sNavigation.sCS[u8LCIndex].u32Score == maxScore)
-			{
-				same = 1;
-			}
-			else
-			{
-				same = 0;
 			}
 		}
-		if (same = 0)
-		{
-			// figure out sensor with least uncertainty
-			Luint32 minUncert=sFCU.sNavigation.sCS[0].u32XPosUncert;
-			for (u8LCIndex = 1; u8LCIndex < C_FCU__NAVIGATION_NUM_CONTRAST_SENSORS; u8LCIndex++)
-			{
-				if (sFCU.sNavigation.sCS[u8LCIndex].u32XPosUncert < minUncert)
-				{
-					minUncert = sFCU.sNavigation.sCS[u8LCIndex].u32XPosUncert
-					sFCU.sNavigation.u8masterSensor = u8LCIndex;
-				}
-			}
-		}
-
 	}
-	
 }
 
-/** The longitudenal position down the tube */
-/*
-input
-=====
-contrast sensor 1 value
-contrast sensor 2 value
-contrast sensor 3 value
-laser range finder value
-acceleration
-acceleration uncertainty
-acceleration validity
-*/
-
-/*
-output
-======
-speed
-speed uncertainty
-speed validity
-*/
-void vFCU_FLIGHTCTL_NAVIGATION__CalcSpeed(void)
+void vFCU_FLIGHTCTL_NAVIGATION__CalcLongitudenalPositionAndSpeed(void)
 {
-	
-}
+	Luint32 u32TransitionA;
+	Lfloat32 f32XPos_ContrastSensors;
+	Lfloat32 f32XPos_LRF;
 
-/** The longitudenal position down the tube */
-/*
-input
-=====
-accelerometer 1 value
-accelerometer 2 value
-pitch
-roll
-yaw
-*/
-
-/*
-output
-======
-acceleration
-acceleration uncertainty
-acceleration validity
-*/
-void vFCU_FLIGHTCTL_NAVIGATION__CalcAcceleration(void)
-{
-	// use pitch, yaw and roll along with accelerometer data to get corrected acceleration
-	Lfloat32 f32LongitudenalAcceleration;
-	if (sFCU.sNavigation.f32LongitudenalPosition < MAX_LONGETIUDENAL_POSITION_USE_ACCELEROMETER)
-	{	
-		// get filtered accelerometer value. need to confirm how we get the data
-		Lfloat32 f32Accel1 = sFCU.sFlightControl.sAccelerometer[0].getAccelerationFiltered();
-		Lfloat32 f32Accel2 = sFCU.sFlightControl.sAccelerometer[1].getAccelerationFiltered();
-
-		// compute final longitudenal acceleration as the mean of the acceleration from valid accelerometers
-		f32LongitudenalAcceleration = (f32Accel1[0] + f32Accel2[0] + f32Accel1[1] + f32Accel2[1] + f32Accel1[2] + f32Accel2[2]) / 6;
+	if (sFCU.eMissionPhase == MISSION_PHASE__PUSH_INTERLOCK_PHASE)
+	{
+		// initial
+		sFCU.sNavigation.sCS[0].u32Xpos = C_FCU__NAVIGATION_PUSHER_START_XPOS + C_FCU__NAVIGATION_STARTING_XPOS_LC_FWD;
+		sFCU.sNavigation.sCS[1].u32Xpos = C_FCU__NAVIGATION_PUSHER_START_XPOS + C_FCU__NAVIGATION_STARTING_XPOS_LC_MID;
+		sFCU.sNavigation.sCS[2].u32Xpos = C_FCU__NAVIGATION_PUSHER_START_XPOS + C_FCU__NAVIGATION_STARTING_XPOS_LC_AFT;
+		sFCU.sNavigation.sCS[0].u32XPosUncert = C_FCU__NAVIGATION_X_POS_UNCERTAINTY_OFFSET;
+		sFCU.sNavigation.sCS[1].u32XPosUncert = C_FCU__NAVIGATION_X_POS_UNCERTAINTY_OFFSET;
+		sFCU.sNavigation.sCS[2].u32XPosUncert = C_FCU__NAVIGATION_X_POS_UNCERTAINTY_OFFSET;
+	}
+	else if (sFCU.sNavigation.u8LRFAvailable == 1U &&
+			sFCU.sNavigation.u3210MSLRFTimer < C_FCU__NAVIGATION_LRF_TRANSITION_DELAY_FROM_CONTRAST_SENSORS )
+	{
+		// transition between contrast sensor and LRF
+		u32TransitionA = 1 - sFCU.sNavigation.u3210MSLRFTimer - C_FCU__NAVIGATION_LRF_TRANSITION_DELAY_FROM_CONTRAST_SENSORS;
+		f32XPos_ContrastSensors = (Lfloat32)u32vFCU_FLIGHTCTL_NAVIGATION__ContrastSensor_Get_Distance();
+		f32XPos_LRF = f32FCU_LASERDIST__Get_Distance();
+		sFCU.sNavigation.f32LongitudenalPosition = (1 - u32TransitionA) * f32XPos_ContrastSensors + u32TransitionA * f32XPos_LRF;
+	}
+	else if (sFCU.sNavigation.u8LRFAvailable == 1U)
+	{
+		// laser range finder
+		sFCU.sNavigation.f32LongitudenalPosition = f32FCU_LASERDIST__Get_Distance();
+		sFCU.sNavigation.f32LongitudenalSpeed += sFCU.sNavigation.f32LongitudenalAcceleration * sFCU.sNavigation.sFCU.sNavigation.u3210MSNavTimer;
+		sFCU.sNavigation.sCS[u8LCIndex].u32Xpos += sFCU.sNavigation.f32LongitudenalSpeed * sFCU.sNavigation.sFCU.sNavigation.u3210MSNavTimer;
 	}
 	else
 	{
-		// depending on position down the tube, use laser range finder to compute acceleration
-		f32LongitudenalAcceleration = getAccelerationFromLaserRangeFinder();
+		// contrast sensor
+		vFCU_FLIGHTCTL_NAVIGATION__ContrastSensor_Distance();
+	}
+	
+	// TODO filter
+
+}
+
+void vFCU_FLIGHTCTL_NAVIGATION__CalcAcceleration(void)
+{
+
+	Luint8 u8Device;
+	Luint8 u8ValidDevices=0;
+	Lfloat32 f32TotalAccel=0
+	Lfloat32 f32Accel;
+	// get validity
+	for(u8Device = 0U; u8Device < C_LOCALDEF__LCCM418__NUM_DEVICES; u8Device++)
+	{
+		//If the value of an accelerometer is above max possible acceleration for more than accelerometer high value failure delay, the FCU shall set the acceleration validity to false.
+		f32Accel = sFCU.sNavigation.sAccel[u8Device].f32Accel = s32FCU_ACCELL__Get_CurrentAccel_mmss(u8Device);
+		if (f32Accel <= C_FCU__NAVIGATION_MAX_ACCELERATION)
+		{
+			sFCU.sNavigation.u3210MSAccelHiValTimer = 0;
+			sFCU.sNavigation.sAccel[u8Device].u8Valid = 1;
+		}
+		elseif (f32Accel > C_FCU__NAVIGATION_MAX_ACCELERATION &&
+				sFCU.sNavigation.u3210MSAccelHiValTimer > C_FCU__NAVIGATION_ACCELEROMETER_HIGH_VAL_DELAY)
+		{
+			sFCU.sNavigation.sAccel[u8Device].u8Valid = 0;
+		}
+		if (f32Accel > 0)
+		{
+			sFCU.sNavigation.u3210MSAccelLoValTimer = 0;
+		}
+		elseif (f32Accel > C_FCU__NAVIGATION_MAX_ACCELERATION &&
+				sFCU.sNavigation.u3210MSAccelLoValTimer > C_FCU__NAVIGATION_ACCELEROMETER_LOW_VAL_DELAY)
+		{
+			sFCU.sNavigation.sAccel[u8Device].u8Valid = 0;
+		}
+
+	}
+	// TODO: If an accelerometer is in acceleration phase expected range or in deceleration phase expected range, while the other accelerometer indicates 0 for more than accelerometer low value failure delay, the FCU shall set the acceleration validity to false.
+	// If at least one accelerometer is valid, the FCU shall set the acceleration validity to true. Otherwise, it shall the FCU shall set the acceleration validity to false.
+	sFCU.sNavigation.u8LongitudenalAccelerationValidity = 0;
+	for(u8Device = 0U; u8Device < C_LOCALDEF__LCCM418__NUM_DEVICES; u8Device++)
+	{
+		if (sFCU.sNavigation.sAccel[u8Device].u8Valid)
+		{
+			sFCU.sNavigation.u8LongitudenalAccelerationValidity = 1;
+		}
 	}
 
+	// accumulate accelerometers that are valid
+	for(u8Device = 0U; u8Device < C_LOCALDEF__LCCM418__NUM_DEVICES; u8Device++)
+	{
+		if (sFCU.sNavigation.sAccel[u8Device].u8Valid)
+		{
+			f32TotalAccel = sFCU.sNavigation.sAccel[u8Device].f32Accel;
+			u8ValidDevices++;
+		}
+	}
+
+	sFCU.sNavigation.f32LongitudenalAcceleration = f32TotalAccel/u8ValidDevices;
+
+	// TODO filter
 	// TODO compensate for thermal drift?
 }
 
 
+void vFCU_FLIGHTCTL_NAVIGATION__10MS_ISR(void)
+{
+	sFCU.sNavigation.u3210MSNavTimer++;
+	sFCU.sNavigation.u3210MSLRFTimer++;
+	sFCU.sNavigation.u3210MSDetectStripeTimer++;
+	sFCU.sNavigation.u3210MSBetweenStripeTimer++;
+	sFCU.sNavigation.u3210MSAccelHiValTimer++;
+	sFCU.sNavigation.u3210MSAccelLoValTimer++;
+}
+
 
 /****************************************************************************/
 /** Functions to retrieve NAVIGATION parameters, to be called from other files */
+Luint32 u32FCU_FCTL_NAV__PodSpeed(void)
+{
+	return round(sFCU.sNavigation.f32LongitudenalSpeed);
+}
+
+Luint32 vFCU_FCTL_NAV__GetFrontPos(void)
+{
+	return round(sFCU.sNavigation.f32LongitudenalPosition);
+}
+
+Luint32 vFCU_FCTL_NAV__GetRearPos(void)
+{
+	return round(sFCU.sNavigation.f32LongitudenalPosition - C_FCU__NAVIGATION_POD_LENGTH);
+}
+
+
+
 
 
 
