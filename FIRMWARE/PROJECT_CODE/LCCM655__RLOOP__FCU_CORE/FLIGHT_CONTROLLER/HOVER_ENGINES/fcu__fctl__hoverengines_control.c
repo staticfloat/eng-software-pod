@@ -81,7 +81,7 @@ void vFCU_FLIGHTCTL_HOVERENGINES__Process(void)
 				// fetch the pod speed
 				u32PodSpeed = vFCU__POD_SPEED();
 				// if the pod speed is lower than the pod standby speed and the pod is lifted
-				if((u32PodSpeed < C_FCU__NAV_PODSPEED_STANDBY) && (sFCU.sOpStates.u8Lifted != 0U))
+				if((u32PodSpeed < C_FCU__NAV_PODSPEED_STANDBY) && (sFCU.sStateMachine.sOpStates.u8Lifted != 0U))
 				{
 					// go to HOVERENGINES_STATE__ENABLED state
 					sFCU.sHoverengines.sHoverenginesIntParams.u8TempVar = 0U;
@@ -263,7 +263,7 @@ void vFCU_FLIGHTCTL_HOVERENGINES__Process(void)
 				sFCU.sHoverengines.u16HoverEnginesCommands = 0U;
 				// get pod speed
 				u32PodSpeed = vFCU__POD_SPEED();
-				if((sFCU.sOpStates.u8StaticHovering != 0U) && (u32PodSpeed < C_FCU__NAV_PODSPEED_STANDBY))
+				if((sFCU.sStateMachine.sOpStates.u8StaticHovering != 0U) && (u32PodSpeed < C_FCU__NAV_PODSPEED_STANDBY))
 				{
 					for(u8Counter = 1; u8Counter < 8; u8Counter++)
 					{
