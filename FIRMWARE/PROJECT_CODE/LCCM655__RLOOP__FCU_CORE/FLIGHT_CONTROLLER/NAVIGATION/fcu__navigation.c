@@ -385,12 +385,12 @@ Luint32 u32FCU_FCTL_NAV__GetRearPos(void)
 
 Luint32 u32FCU_FCTL_NAV__Get_Accel_mmss(void)
 {
-//do something with it
+	return 0;
 }
 
 Luint32 u32FCU_FCTL_LASERORIENT__Get_Z_Pos()
 {
-	//TODO: WRITE THIS ONE
+	return 0;
 }
 
 Luint8 u8FCU_FCTL_NAV__IsInFailure(void)

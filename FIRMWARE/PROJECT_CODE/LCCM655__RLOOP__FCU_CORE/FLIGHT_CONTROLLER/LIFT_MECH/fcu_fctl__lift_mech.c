@@ -69,6 +69,7 @@ Luint32 u32FCU_FCTL_LIFTMECH__Get_MLP(void)
 	// add lower level function for this
 	// not sure how to combine 4 values into one
 	//TODO: return
+	return 0;
 }
 
 void vFCU_FCTL_LIFTMECH__SetDirAll(E_FCU__LIFTMECH_DIRECTION dir)
@@ -92,12 +93,12 @@ void vFCU_FCTL_LIFTMECH_Dir(E_FCU__LIFTMECH_ACTUATOR actuator, E_FCU__LIFTMECH_D
 //interface with lower level
 }
 
-void vFCU_FCTL_LIFTMECH_Speed(E_FCU__LIFTMECH_ACTUATOR actuator, E_FCU__LIFTMECH_DIRECTION dir)
+void vFCU_FCTL_LIFTMECH_Speed(E_FCU__LIFTMECH_ACTUATOR actuator, Luint32 dir)
 {
 //interface with lower level
 }
 
-void vFCU_FCTL_LIFTMECH__Get_State(void)
+E_FCU_LIFTMECH_STATE eFCU_FCTL_LIFTMECH__Get_State(void)
 {
 	//implement this one
 }

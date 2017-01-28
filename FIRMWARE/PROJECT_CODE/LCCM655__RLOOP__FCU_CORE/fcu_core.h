@@ -1265,6 +1265,7 @@
 		void vFCU_FCTL_EDDY_BRAKES__ApplyFullBrakes(void);
 		void vFCU_FCTL_EDDY_BRAKES__Release(void);
 		void vFCU_FCTL_EDDY_BRAKES__SetDistance(Luint32 u32value);
+		E_FCU__FCTL_EDDYBRAKES_STATE eFCU_FCTL_EDDY_BRAKES__Get_State(void);
 
 		//brakes
 		void vFCU_BRAKES__Init(void);
@@ -1451,14 +1452,15 @@
 		void vFCU_FCTL_LIFTMECH__SetSpeedAll(Luint32 u32speed);
 		void vFCU_FCTL_LIFTMECH__Extend(void);
 		//void vFCU_FCTL_LIFTMECH_Speed(E_FCU__LIFTMECH_ACTUATOR actuator, E_FCU__LIFTMECH_DIRECTION dir);
-		//void vFCU_FCTL_LIFTMECH__Get_State(void);
+		void vFCU_FCTL_LIFTMECH__Get_State(void);
+		void vFCU_FCTL_LIFTMECH_Speed(E_FCU__LIFTMECH_ACTUATOR actuator, Luint32 u32speed);
 
 		//brakes
 		void vFCU_FCTL_EDDYBRAKES_Speed(E_FCU__FCTL_EDDYBRAKES_ACTUATOR actuator, Luint32 u32speed);
 		void vFCU_FCTL_EDDYBRAKES__SetSpeedAll(Luint32 u32speed);
 		void vFCU_FCTL_EDDYBRAKES__SetDirAll(E_FCU__FCTL_EDDYBRAKES_DIRECTION dir);
 		void vFCU_FCTL_EDDY_BRAKES__ControlledEmergencyBrake();
-		void vFCU_FCTL_EDDY_BRAKES__ApplyFullBrakes(void);
+		void vFCU_FCTL_EDDY_BRAKES__ApplyFullyBrakes(void);
 		void vFCU_FCTL_EDDY_BRAKES__Release(void);
 		void vFCU_FCTL_EDDY_BRAKES__GainScheduleController(Luint32 u32speed);
 		void vFCU_FCTL_EDDY_BRAKES__GimbalSpeedController(void);

@@ -239,7 +239,7 @@ RLOOP - FLIGHT CONTROL UNIT - CORE
 			#define C_LOCALDEF__LCCM655__ENABLE_AUX_PROPULSION_CONTROL 		(1U)
 
 			/** Enable PID for the Brakes */
-			#define C_LOCALDEF__LCCM655__ENABLE_BRAKEPID 					(1U)
+			#define C_LOCALDEF__LCCM655__ENABLE_BRAKEPID 					(0U)
 
 			/** Enable Cooling control */
 			#define C_LOCALDEF__LCCM655__ENABLE_COOLING_CONTROL				(1U)
