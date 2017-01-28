@@ -173,6 +173,14 @@ void vFCU_NET_RX__RxSafeUDP(Luint8 *pu8Payload, Luint16 u16PayloadLength, Luint1
 //					vFCU_FCTL_LIFTMECH__SetDirAll(dir);
 //				#endif
 //				break;
+			case NET_PKT__FCU_ADDYBRAKES_FULL_EDDY_BRAKES:
+				vFCU_FCTL_EDDY_BRAKES__ApplyFullBrakes();
+
+			case NET_PKT__FCU_ADDYBRAKES_RELEASE_EDDY_BRAKES:
+				vFCU_FCTL_EDDY_BRAKES__Release();
+
+			case NET_PKT__FCU_ADDYBRAKES_SET_DISTANCE:
+				vFCU_FCTL_EDDY_BRAKES__SetDistance(u32Block[0]);
 
 			case 	NET_PKT__FCU_HOVERENGINES_CONTROL__M_SET_SPEED_HE1:
 						case 	NET_PKT__FCU_HOVERENGINES_CONTROL__M_SET_SPEED_HE2:

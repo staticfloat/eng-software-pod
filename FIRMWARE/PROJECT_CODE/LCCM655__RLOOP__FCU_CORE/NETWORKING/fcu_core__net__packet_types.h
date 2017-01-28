@@ -153,6 +153,15 @@
 		/** perform a zero/span on the MLP */
 		NET_PKT__FCU_BRAKES__MLP_ZEROSPAN = 0x1409U,
 
+		// fully apply brakes
+		NET_PKT__FCU_ADDYBRAKES_FULL_EDDY_BRAKES = 0x1410U,
+
+		// fully release brakes
+		NET_PKT__FCU_ADDYBRAKES_RELEASE_EDDY_BRAKES = 0x1411U,
+
+		// Set brakes to specific distance, passing as parameter the value in um
+		NET_PKT__FCU_ADDYBRAKES_SET_DISTANCE = 0x1412U,
+
 
 		//////////////////////////////////////////////////////
 		//FCU: THROTTLES (0x1500)
