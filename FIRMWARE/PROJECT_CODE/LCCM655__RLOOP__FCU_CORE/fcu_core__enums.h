@@ -106,23 +106,6 @@
 	// (modified by @acaratel on 19 Jan 2017)
 	// Partial list, see http://confluence.rloop.org/display/SD/Commands+from+Ground+Station+to+rPod
 
-	typedef enum
-	{
-		DO_NOTHING = 0U,
-		STATIC_HOVERING,
-		RELEASE_STATIC_HOVERING,
-		M_SET_SPEED_HE1,
-		M_SET_SPEED_HE2,
-		M_SET_SPEED_HE3,
-		M_SET_SPEED_HE4,
-		M_SET_SPEED_HE5,
-		M_SET_SPEED_HE6,
-		M_SET_SPEED_HE7,
-		M_SET_SPEED_HE8,
-		SET_ALL_HE_SPEED
-	} E_GS_COMMANDS;
-
-
 	/** State types for the Control Hoverengines state machine */
 	typedef enum {
 		HOVERENGINES_STATE__IDLE,

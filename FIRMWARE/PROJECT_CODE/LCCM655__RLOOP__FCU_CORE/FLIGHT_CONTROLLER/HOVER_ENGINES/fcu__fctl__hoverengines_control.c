@@ -5,9 +5,6 @@
 * @copyright  rLoop Inc.
 */
 
-/////////////////////////////////////////////
-///////////  WORK IN PROGRESS  //////////////
-/////////////////////////////////////////////
 
 // TO DO:
 // - Verification
@@ -19,16 +16,6 @@
  //   void   vFCU_FLIGHTCTL_HOVERENGINES__stop(void);
  //   Lint16 vFCU_FLIGHTCTL_HOVERENGINES__Get_State(Lint8 u8Enable);
 
-
-#include "../../fcu_core.h"
-
-#if C_LOCALDEF__LCCM655__ENABLE_THIS_MODULE == 1U
-#if C_LOCALDEF__LCCM655__ENABLE_FLIGHT_CONTROL == 1U
-//#if C_LOCALDEF__LCCM655__ENABLE_HOVERENGINES_CONTROL == 1U
-
-extern struct _strFCU sFCU;
-
-// TODO: need values for following constants and move to fcu_core_defines.h
 
 /** Hover Engines Parameters */
 #define C_FCU__HE_STATIC_HOVER_RPM                     (2000U)   // hover engine nominal RPM speed
@@ -45,17 +32,16 @@ extern struct _strFCU sFCU;
 
 
 
+#include "../../fcu_core.h"
 
+#if C_LOCALDEF__LCCM655__ENABLE_THIS_MODULE == 1U
+#if C_LOCALDEF__LCCM655__ENABLE_FLIGHT_CONTROL == 1U
+//#if C_LOCALDEF__LCCM655__ENABLE_HOVERENGINES_CONTROL == 1U
 
+extern struct _strFCU sFCU;
 
+// TODO: need values for following constants and move to fcu_core_defines.h
 
-
-// TODO: need the following functions:
-// vFCU_COOLING__Set_Valve(ValveNumber, TimeOn, TimeOff);
-// vFCU_COOLING__Set_Valve(ValveNumber, TimeOn, TimeOff);
-// vFCU_COOLING__Set_Valve(ValveNumber, TimeOn, TimeOff);
-// vFCU_COOLING__Set_Valve(ValveNumber, TimeOn, TimeOff);
-// u32FCU_FLIGHTCTL_NAV__PodSpeed();
 
 void vFCU_FLIGHTCTL_HOVERENGINES__Init(void)
 {
@@ -65,7 +51,7 @@ void vFCU_FLIGHTCTL_HOVERENGINES__Init(void)
 	sFCU.sHoverengines.sHoverenginesIntParams.u8RunAuto = 0U; // Flag to initiate flight mode
 	sFCU.sHoverengines.sHoverenginesIntParams.u8TempVar = 0U; // Tempo variable used inside of the functions
 
-	sFCU.sHoverengines.u16HoverEnginesCommands = DO_NOTHING; // Set the commands from the ground station to DO_NOTHING at startup
+	sFCU.sHoverengines.u16HoverEnginesCommands = 0U; // Set the commands from the ground station to DO_NOTHING at startup
 
 	sFCU.sHoverengines.eState = HOVERENGINES_STATE__IDLE; // set the first state of the hover engines control state machine to IDLE
 
@@ -89,8 +75,9 @@ void vFCU_FLIGHTCTL_HOVERENGINES__Process(void)
 
 		case HOVERENGINES_STATE__IDLE:
 			// if is received the "Enable hover engines" command or if is active the autonomous behaviour set by the TOD_DRIVE FSM
-			if((sFCU.sHoverengines.u16HoverEnginesCommands == STATIC_HOVERING) || (sFCU.sHoverengines.sHoverenginesIntParams.u8Enable == 1U && sFCU.sHoverengines.sHoverenginesIntParams.u8RunAuto == 1U))
+			if((sFCU.sHoverengines.u16HoverEnginesCommands == NET_PKT__FCU_HOVERENGINES_CONTROL__STATIC_HOVERING) || (sFCU.sHoverengines.sHoverenginesIntParams.u8Enable == 1U && sFCU.sHoverengines.sHoverenginesIntParams.u8RunAuto == 1U))
 			{
+				sFCU.sHoverengines.u16HoverEnginesCommands = 0U;
 				// fetch the pod speed
 				u32PodSpeed = vFCU__POD_SPEED();
 				// if the pod speed is lower than the pod standby speed and the pod is lifted
@@ -105,7 +92,7 @@ void vFCU_FLIGHTCTL_HOVERENGINES__Process(void)
 
 
 		case HOVERENGINES_STATE__ENABLE_1TH_GROUP:
-			// this state enable the 2th group of Hover Engines
+			// this state enable the 1th group of Hover Engines
 
 			if(sFCU.sHoverengines.sHoverenginesIntParams.u8TempVar < 1U)
 			{
@@ -116,7 +103,7 @@ void vFCU_FLIGHTCTL_HOVERENGINES__Process(void)
 						// activate the cooling system for the 2th group of Hover Engines
 						vFCU_COOLING__Set_Valve(u8Counter, 0.5, 1.5); // to be changed (this function is not yet implemented
 						// linearly set the 2th group of Hover Engine RPM from 0 to hover engine nominal RPM
-						vFCU_THROTTLE__Set_Throttle(u8Counter, C_FCU__HE_STATIC_HOVER_RPM, THROTTLE_TYPE__RAMP);
+						vFCU_THROTTLE__Set_Throttle(u8Counter-1, C_FCU__HE_STATIC_HOVER_RPM, THROTTLE_TYPE__RAMP);
 						sFCU.sHoverengines.sHoverenginesIntParams.u32CurrentRPMValue[u8Counter] = C_FCU__HE_STATIC_HOVER_RPM;
 					}
 				}
@@ -148,7 +135,7 @@ void vFCU_FLIGHTCTL_HOVERENGINES__Process(void)
 
 
 		case HOVERENGINES_STATE__ENABLE_2ND_GROUP:
-			// this state enable the 2th group of Hover Engines
+			// this state enable the 2nd group of Hover Engines
 
 			if(sFCU.sHoverengines.sHoverenginesIntParams.u8TempVar < 2U)
 			{
@@ -159,7 +146,7 @@ void vFCU_FLIGHTCTL_HOVERENGINES__Process(void)
 						// activate the cooling system for the 2th group of Hover Engines
 						vFCU_COOLING__Set_Valve(u8Counter, 0.5, 1.5); // to be changed (this function is not yet implemented
 						// linearly set the 2th group of Hover Engine RPM from 0 to hover engine nominal RPM
-						vFCU_THROTTLE__Set_Throttle(u8Counter, C_FCU__HE_STATIC_HOVER_RPM, THROTTLE_TYPE__RAMP);
+						vFCU_THROTTLE__Set_Throttle(u8Counter-1, C_FCU__HE_STATIC_HOVER_RPM, THROTTLE_TYPE__RAMP);
 						sFCU.sHoverengines.sHoverenginesIntParams.u32CurrentRPMValue[u8Counter] = C_FCU__HE_STATIC_HOVER_RPM;
 					}
 				}
@@ -230,8 +217,8 @@ void vFCU_FLIGHTCTL_HOVERENGINES__Process(void)
 						// where HEY is the hover engine symmetrically opposite to HEX with respect to pod center
 						Luint8 u8SimmetricalIndex;
 						u8SimmetricalIndex = (u8Counter < 5) ?  (u8Counter + 4) :  (u8Counter - 4);
-						vFCU_THROTTLE__Set_Throttle(u8Counter, 0U, THROTTLE_TYPE__STEP);
-						vFCU_THROTTLE__Set_Throttle(u8SimmetricalIndex, 0U, THROTTLE_TYPE__STEP);
+						vFCU_THROTTLE__Set_Throttle(u8Counter-1, 0U, THROTTLE_TYPE__STEP);
+						vFCU_THROTTLE__Set_Throttle(u8SimmetricalIndex-1, 0U, THROTTLE_TYPE__STEP);
 						sFCU.sHoverengines.sHoverenginesIntParams.u32CurrentRPMValue[u8Counter] = 0U;
 						sFCU.sHoverengines.sHoverenginesIntParams.u32CurrentRPMValue[u8SimmetricalIndex] = 0U;
 					}
@@ -248,7 +235,7 @@ void vFCU_FLIGHTCTL_HOVERENGINES__Process(void)
 						{
 							//the HE RPM is reduced to hover engine cruise RPM
 							sFCU.sHoverengines.sHoverenginesIntParams.u32CurrentRPMValue[u8Counter] = C_FCU__HE_CRUISE_RPM;
-							vFCU_THROTTLE__Set_Throttle(u8Counter, C_FCU__HE_CRUISE_RPM, THROTTLE_TYPE__STEP);
+							vFCU_THROTTLE__Set_Throttle(u8Counter-1, C_FCU__HE_CRUISE_RPM, THROTTLE_TYPE__STEP);
 						}
 						sFCU.sHoverengines.sHoverenginesIntParams.u8SpeedState = 1U;
 					}
@@ -262,7 +249,7 @@ void vFCU_FLIGHTCTL_HOVERENGINES__Process(void)
 						for(u8Counter = 1; u8Counter < 8; u8Counter++)
 						{
 							sFCU.sHoverengines.sHoverenginesIntParams.u32CurrentRPMValue[u8Counter] = C_FCU__HE_STATIC_HOVER_RPM;
-							vFCU_THROTTLE__Set_Throttle(u8Counter, C_FCU__HE_STATIC_HOVER_RPM, THROTTLE_TYPE__STEP);
+							vFCU_THROTTLE__Set_Throttle(u8Counter-1, C_FCU__HE_STATIC_HOVER_RPM, THROTTLE_TYPE__STEP);
 						}
 						sFCU.sHoverengines.sHoverenginesIntParams.u8SpeedState = 0U;
 					}
@@ -271,8 +258,9 @@ void vFCU_FLIGHTCTL_HOVERENGINES__Process(void)
 
 			// If is received the command to release the static hovering
 			// or if the POD_DRIVE FSM disable the HE,
-			if((sFCU.sHoverengines.u16HoverEnginesCommands == RELEASE_STATIC_HOVERING) || (sFCU.sHoverengines.sHoverenginesIntParams.u8Enable == 0U))
+			if((sFCU.sHoverengines.u16HoverEnginesCommands == NET_PKT__FCU_HOVERENGINES_CONTROL__RELEASE_STATIC_HOVERING) || (sFCU.sHoverengines.sHoverenginesIntParams.u8Enable == 0U))
 			{
+				sFCU.sHoverengines.u16HoverEnginesCommands = 0U;
 				// get pod speed
 				u32PodSpeed = vFCU__POD_SPEED();
 				if((sFCU.sOpStates.u8StaticHovering != 0U) && (u32PodSpeed < C_FCU__NAV_PODSPEED_STANDBY))
@@ -280,7 +268,7 @@ void vFCU_FLIGHTCTL_HOVERENGINES__Process(void)
 					for(u8Counter = 1; u8Counter < 8; u8Counter++)
 					{
 						sFCU.sHoverengines.sHoverenginesIntParams.u32CurrentRPMValue[u8Counter] = 0;
-						vFCU_THROTTLE__Set_Throttle(u8Counter, 0, THROTTLE_TYPE__STEP);
+						vFCU_THROTTLE__Set_Throttle(u8Counter-1, 0, THROTTLE_TYPE__STEP);
 						vFCU_COOLING__Set_Valve(u8Counter, 0.0, 2.0);
 					}
 				}
@@ -347,55 +335,64 @@ void vFCU_FLIGHTCTL_HOVERENGINES__ManualCommandsHandle(void)
 	Luint32 u32GS_RPM = sFCU.sHoverengines.u16HoverEnginesCommandValues;
 	switch(sFCU.sHoverengines.u16HoverEnginesCommands)
 	{
-		case M_SET_SPEED_HE1:
+		case NET_PKT__FCU_HOVERENGINES_CONTROL__M_SET_SPEED_HE1:
 			u32PodSpeed = u32FCU_FLIGHTCTL_NAV__POD_SPEED();
-			if(u32PodSpeed < C_FCU__NAV_PODSPEED_STANDBY)
-				vFCU_THROTTLE__Set_Throttle(1U, u32GS_RPM, THROTTLE_TYPE__STEP);
+			vFCU_THROTTLE__Set_Throttle(0U, u32GS_RPM, THROTTLE_TYPE__STEP);
+			sFCU.sHoverengines.u16HoverEnginesCommands = 0U;
 			break;
 
-		case M_SET_SPEED_HE2:
+		case NET_PKT__FCU_HOVERENGINES_CONTROL__M_SET_SPEED_HE2:
 			u32PodSpeed = u32FCU_FLIGHTCTL_NAV__POD_SPEED();
-			if(u32PodSpeed < C_FCU__NAV_PODSPEED_STANDBY)
-				vFCU_THROTTLE__Set_Throttle(2U, u32GS_RPM, THROTTLE_TYPE__STEP);
+			vFCU_THROTTLE__Set_Throttle(1U, u32GS_RPM, THROTTLE_TYPE__STEP);
+			sFCU.sHoverengines.u16HoverEnginesCommands = 0U;
 			break;
 
-		case M_SET_SPEED_HE3:
+		case NET_PKT__FCU_HOVERENGINES_CONTROL__M_SET_SPEED_HE3:
 			u32PodSpeed = u32FCU_FLIGHTCTL_NAV__POD_SPEED();
-			if(u32PodSpeed < C_FCU__NAV_PODSPEED_STANDBY)
-				vFCU_THROTTLE__Set_Throttle(3U, u32GS_RPM, THROTTLE_TYPE__STEP);
+			vFCU_THROTTLE__Set_Throttle(2U, u32GS_RPM, THROTTLE_TYPE__STEP);
+			sFCU.sHoverengines.u16HoverEnginesCommands = 0U;
 			break;
 
-		case M_SET_SPEED_HE4:
+		case NET_PKT__FCU_HOVERENGINES_CONTROL__M_SET_SPEED_HE4:
 			u32PodSpeed = u32FCU_FLIGHTCTL_NAV__POD_SPEED();
-			if(u32PodSpeed < C_FCU__NAV_PODSPEED_STANDBY)
-				vFCU_THROTTLE__Set_Throttle(4U, u32GS_RPM, THROTTLE_TYPE__STEP);
+			vFCU_THROTTLE__Set_Throttle(3U, u32GS_RPM, THROTTLE_TYPE__STEP);
+			sFCU.sHoverengines.u16HoverEnginesCommands = 0U;
 			break;
 
-		case M_SET_SPEED_HE5:
+		case NET_PKT__FCU_HOVERENGINES_CONTROL__M_SET_SPEED_HE5:
 			u32PodSpeed = u32FCU_FLIGHTCTL_NAV__POD_SPEED();
-			if(u32PodSpeed < C_FCU__NAV_PODSPEED_STANDBY)
-				vFCU_THROTTLE__Set_Throttle(5U, u32GS_RPM, THROTTLE_TYPE__STEP);
+			vFCU_THROTTLE__Set_Throttle(4U, u32GS_RPM, THROTTLE_TYPE__STEP);
+			sFCU.sHoverengines.u16HoverEnginesCommands = 0U;
 			break;
 
-		case M_SET_SPEED_HE6:
+		case NET_PKT__FCU_HOVERENGINES_CONTROL__M_SET_SPEED_HE6:
 			u32PodSpeed = u32FCU_FLIGHTCTL_NAV__POD_SPEED();
-			if(u32PodSpeed < C_FCU__NAV_PODSPEED_STANDBY)
-				vFCU_THROTTLE__Set_Throttle(6U, u32GS_RPM, THROTTLE_TYPE__STEP);
+			vFCU_THROTTLE__Set_Throttle(5U, u32GS_RPM, THROTTLE_TYPE__STEP);
+			sFCU.sHoverengines.u16HoverEnginesCommands = 0U;
 			break;
 
-		case M_SET_SPEED_HE7:
+		case NET_PKT__FCU_HOVERENGINES_CONTROL__M_SET_SPEED_HE7:
 			u32PodSpeed = u32FCU_FLIGHTCTL_NAV__POD_SPEED();
-			if(u32PodSpeed < C_FCU__NAV_PODSPEED_STANDBY)
-				vFCU_THROTTLE__Set_Throttle(7U, u32GS_RPM, THROTTLE_TYPE__STEP);
+			vFCU_THROTTLE__Set_Throttle(6U, u32GS_RPM, THROTTLE_TYPE__STEP);
+			sFCU.sHoverengines.u16HoverEnginesCommands = 0U;
 			break;
 
-		case M_SET_SPEED_HE8:
+		case NET_PKT__FCU_HOVERENGINES_CONTROL__M_SET_SPEED_HE8:
 			u32PodSpeed = u32FCU_FLIGHTCTL_NAV__POD_SPEED();
-			if(u32PodSpeed < C_FCU__NAV_PODSPEED_STANDBY)
-				vFCU_THROTTLE__Set_Throttle(8U, u32GS_RPM, THROTTLE_TYPE__STEP);
+			vFCU_THROTTLE__Set_Throttle(7U, u32GS_RPM, THROTTLE_TYPE__STEP);
+			sFCU.sHoverengines.u16HoverEnginesCommands = 0U;
 			break;
 	}
 }
+
+
+
+vFCU_FLIGHTCTL_HOVERENGINES__SetCommand(Luint32 u32Command, Luint32 u32Value)
+{
+	sFCU.sHoverengines.u16HoverEnginesCommands = u32Command ;
+	sFCU.sHoverengines.u16HoverEnginesCommandValues = u32Value;
+}
+
 
 
 
