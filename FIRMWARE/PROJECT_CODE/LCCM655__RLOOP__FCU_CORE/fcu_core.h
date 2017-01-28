@@ -161,18 +161,6 @@
 			}sDrivePod;
 			#endif
 
-			struct
-			{
-				struct
-				{
-
-					E_FCU__FCTL_EDDYBRAKES_DIRECTION eEddyBrakesDir;
-
-					E_FCU__FCTL_EDDYBRAKES_ACTUATOR	eEddyBrakesAct;
-				}sEddyBrakes;
-			}sFctl;
-
-
 
 			#if C_LOCALDEF__LCCM655__ENABLE_BRAKES == 1U
 
@@ -1213,6 +1201,11 @@
 		void vFCU_PICOMMS__Init(void);
 		void vFCU_PICOMMS__Process(void);
 		void vFCU_PICOMMS__100MS_ISR(void);
+
+		// eddy brakes
+		void vFCU_FCTL_EDDY_BRAKES__ApplyFullBrakes(void);
+		void vFCU_FCTL_EDDY_BRAKES__Release(void);
+		void vFCU_FCTL_EDDY_BRAKES__SetDistance(Luint32 u32value);
 
 		//brakes
 		void vFCU_BRAKES__Init(void);
